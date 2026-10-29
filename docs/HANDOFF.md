@@ -7,8 +7,9 @@
 - **단계:** 디자인 초안 단계예요. 실제 개발(`apps/`, `server/`)은 아직 시작하지 않았어요.
 - **사용자 결정:** 로그인·캘린더를 초안에 넣고 디자인을 다듬은 뒤 개발로 넘어가요. 계획은 [PLAN.md](PLAN.md)에 있어요.
 - **레포:** https://github.com/tacocat404/Cosmodoro (`main`)
-- **최신 초안:** `design/drafts/v5-main.html`(메인), `design/drafts/v5-flight.html`(비행·태양계)
-- **롤백용 시안:** v2~v4, A~C, `backup-*` 폴더예요. 건드리지 않아요.
+- **최신 초안:** `design/drafts/v5-main.html`(메인), `design/drafts/v6-flight.html`(비행·태양계, 2026-10-29)
+- **v6를 만든 이유:** 선배들이 비행 중 행성 3D 에셋, 우주 배경, 항해 연출이 "깬다"고 했어요. 조사 결과는 `design/research/우주 비행 장면 몰입감 개선.md`에 있어요.
+- **롤백용 시안:** v2~v5, A~C, `backup-*` 폴더예요. 건드리지 않아요. v5-flight도 그대로 남아 있어요.
 
 ## 2. 초안 실행
 
@@ -18,8 +19,9 @@ python -m http.server 5520
 
 - 프로젝트 루트에서 실행해요.
 - 메인: http://localhost:5520/design/drafts/v5-main.html
-- 태양계: http://localhost:5520/design/drafts/v5-flight.html?mode=atlas
-- 비행: 메인에서 "발사"를 누르거나 `v5-flight.html?topic=code&min=25`로 열어요.
+- 태양계: http://localhost:5520/design/drafts/v6-flight.html?mode=atlas (v5는 `v5-flight.html?mode=atlas`)
+- 비행: `v6-flight.html?topic=code&min=25`로 열어요. 메인의 "발사" 버튼은 아직 v5-flight로 가요.
+- v6는 `assets/`의 텍스처를 불러와서 `file://`로는 안 열려요. 꼭 로컬 서버로 열어요.
 - `.claude/launch.json`에 `drafts` 설정이 있어서 Claude 브라우저 패널에서는 `preview_start {name:"drafts"}`로 띄워요.
 
 ## 3. 파일 구조와 역할
@@ -28,7 +30,9 @@ python -m http.server 5520
 |---|---|
 | `design/drafts/cosmo-shared.js` | 두 페이지가 같이 쓰는 데이터 (`window.COSMO`). module 스크립트보다 먼저 일반 `<script>`로 불러와요. |
 | `design/drafts/v5-main.html` | 메인 화면 |
-| `design/drafts/v5-flight.html` | 비행 화면과 태양계(atlas) 화면 |
+| `design/drafts/v5-flight.html` | 비행 화면과 태양계(atlas) 화면 (롤백용) |
+| `design/drafts/v6-flight.html` | 비행·태양계 개선안. UI는 v5와 같고 3D 장면만 새로 짰어요 |
+| `design/drafts/assets/` | v6가 쓰는 실제 행성 지도, 은하수, 별 목록(약 13MB). 출처와 라이선스는 `assets/CREDITS.md` |
 | `design/drafts/brand/` | 로고와 파비콘 |
 | `design/research/` | 디자인 조사 보고서 |
 
@@ -101,6 +105,32 @@ python -m http.server 5520
 - Esc는 한 단계씩 뒤로 가요. 방향키로 행성을 넘겨요.
 - 비행 HUD: 유성 꼬리 진행 바, SPD/DIST 계기, 테이프
 
+### 비행 v6 (`v6-flight.html`)
+원칙은 하나예요. "우주선 옆을 따라가는 다큐멘터리 카메라가 한 번의 노출로 찍을 수 있는 것만 보여 준다."
+- **행성:** 실제 지도를 써요. 지구는 NASA 블루마블(낮)·도시 불빛·구름·구름 그림자·바다 반사를, 화성·목성·토성 등은 Solar System Scope 지도를 써요.
+  - 암석 행성은 Lommel–Seeliger, 가스 행성은 Minnaert 주연 감광으로 그려요.
+  - 토성 고리는 실제 반경 프로파일(카시니 간극)에 그림자를 서로 드리워요.
+  - 1k 지도는 지도 보기용이고, 목적지와 확대 화면만 고화질(최대 4k)을 받아요.
+- **하늘:** 실제 별 목록 25,723개(7.5등급까지)를 실제 별자리 위치에 그리고, 별을 지운 Gaia 은하수를 어둡고 회색으로 깔아요.
+  - 황도·은하 좌표 변환은 `sceneToEq()`, `orientSky()`에 있어요.
+  - 비행 중에는 진행 방향이 은하 중심(궁수자리) 근처를 보게 하늘을 돌려요.
+- **노출:** 햇빛 받은 면이 화면을 많이 차지할수록 별과 은하수가 사라져요(`EXPO.vis`). 실제 사진처럼요.
+  - 밝아질 땐 0.4초, 별이 다시 떠오를 땐 2.5초에 걸쳐 바뀌어요.
+  - Neutral 톤매핑의 어두운 끝(toe)을 1/4로 줄여 희미한 별을 살렸어요.
+- **빛:** 조명은 태양 하나뿐이에요(함선 전용 1024 그림자). 가까운 행성이 있을 때만 그 색의 반사광이 들어와요.
+  - 실내 반사 맵(RoomEnvironment)과 카메라 보조광은 뺐어요.
+  - 비행 중 태양은 진행 방향과 약 95° 각도(호만 궤도와 비슷)로 고정해서, 우주선은 옆에서 빛을 받고 목적지는 반쯤 찬 모습으로 보여요.
+- **스케일:** 먼 천체는 지도 방향은 그대로 두고 실제 각크기로 카메라 주변에 배치해요("스테이징").
+  - 목적지는 점(0.04°)에서 시작해 일정한 배율로 커져 도착 때 약 48°가 돼요.
+  - 지구는 40°에서 점으로 작아지고, 태양은 실제 0.53°의 1.8배로 그려요.
+  - 다른 행성은 별처럼 점으로 보여요.
+- **항해 대본:** 출발(뒤돌아 지구를 보며 연소) → 우주선을 한 바퀴 돌아 추적 시점으로 전환 → 순항(아무것도 지나가지 않음) → 93.5%에서 엔진을 앞으로 돌림 → 95.8%부터 감속 연소 → 궤도 진입.
+  - 먼지·소행성·플라이바이·워프 줄무늬·롤·흔들림·깜빡임은 모두 없앴어요.
+  - 속도계는 실제 호만 전이처럼 단조롭게 바뀌어요.
+- **그레이드:** 색조 선택 탈채도와 색수차를 뺐어요. 전역 저채도 필름 톤, 약한 비네트, 고정 디더만 남겼어요.
+- **렌더:** 원경(하늘·태양·행성)과 함선을 두 패스로 나눠 그려요(깊이만 지움). 디버그용으로 `window.cosmodoro`에 `EXPO`, `orientSky`, `skyU`, `ready`를 더 열어 뒀어요.
+- **결정이 필요한 것:** (1) 세션마다 실제 데이터 약 5MB를 받는 것 (2) '창밖 오러리' 대신 정직한 카메라로 가는 것(태양계 지도는 V 키로 남아 있어요)
+
 ## 6. 사용자 취향 (꼭 지켜요)
 
 - **언어:** 답은 한국어로 해요.
@@ -116,6 +146,9 @@ python -m http.server 5520
   - CSS 애니메이션은 `document.getAnimations().forEach(a=>{try{a.finish()}catch(e){}})`로 끝내요.
 - 스크린샷이 예전 화면으로 나올 때가 많아요. 창 크기를 바꾸면(예: 1400x875 ↔ 1440x900) 새로 그려져요. 끝나면 desktop으로 되돌려요.
 - 비행 페이지 디버그용으로 `window.cosmodoro`에 `AT`, `focusPlanet`, `unfocus`, `bodies`, `camera`, `step`을 열어 뒀어요.
+- **클라우드 세션(브라우저 패널 없음):** jsDelivr CDN이 막혀 있을 수 있어요.
+  - npm으로 `three@0.167.0`을 받고, Playwright `route`로 CDN 주소를 로컬 파일에 연결해요. Chromium은 `--use-angle=swiftshader --enable-unsafe-swiftshader`로 띄워요.
+  - v6는 텍스처를 다 받으면 `window.cosmodoro.ready`가 true가 돼요. 그 뒤에 `F.started/F.elapsed/F.clock`을 직접 넣어 원하는 순간을 찍어요.
 - 콘솔에 남는 오래된 오류는 무시해도 돼요.
   - `setPointerCapture NotFoundError`는 예전 테스트 흔적이에요.
   - `Transition was skipped`는 페이지를 이동할 때 나와요.
@@ -123,6 +156,8 @@ python -m http.server 5520
 ## 8. 다음 할 일 후보
 
 1. 사용자 피드백을 받으며 초안 디자인을 계속 다듬어요.
+   - v6 확정 시: 메인의 "발사"·"새 행성" 링크를 v6-flight로 바꾸고, 메인 페이지 행성도 같은 실제 지도(인쇄 질감)로 맞출지 정해요.
+   - 성능: 텍스처를 KTX2로 바꾸면 GPU 메모리가 약 1/4로 줄어요. 실제 노트북에서 프레임 시간을 재요.
 2. 확대 화면의 "집중한 시간"을 실제 비행 기록과 연결해요. 지금도 `minutesFor`가 `cosmodoro.flights`를 더하고 있어요.
 3. 개발 시작은 [PLAN.md](PLAN.md) 순서를 따라요.
    - 루트에 `apps/web`(Vite)을 만들고 v5를 옮겨요.

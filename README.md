@@ -8,7 +8,9 @@
 design/            디자인 초안 (개발 코드와 분리)
   drafts/          HTML 초안. 빌드 없이 바로 열려요
     v5-main.html   메인 (타이머·할 일·캘린더·통계)
-    v5-flight.html 비행 / 태양계 (?mode=atlas)
+    v6-flight.html 비행 / 태양계 개선안 (?mode=atlas) — 실제 행성 지도·실제 별
+    v5-flight.html 이전 비행 화면 (롤백용)
+    assets/        v6가 쓰는 행성 지도·은하수·별 목록과 출처(CREDITS.md)
     cosmo-shared.js  두 페이지가 같이 쓰는 행성·카테고리 데이터
     brand/         로고·파비콘
     index.html     초안 모아 보기
