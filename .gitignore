@@ -1,0 +1,19 @@
+# deps / builds
+node_modules/
+dist/
+build/
+.vite/
+target/
+
+# env / local
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+
+# editor / local tool settings
+.vscode/
+.idea/
+.claude/settings.local.json

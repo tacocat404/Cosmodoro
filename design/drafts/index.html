@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmodoro · 초안 비교</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #05060a; color: #eef0f6; font-family: "Pretendard Variable", system-ui, sans-serif; padding: 56px 40px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
+  p.lead { color: rgba(238,240,246,.6); margin-top: 8px; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 36px; }
+  a.card { display: block; text-decoration: none; color: inherit; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; overflow: hidden; background: #0b0d14; transition: border-color .3s, transform .3s; }
+  a.card:hover { border-color: rgba(255,255,255,.3); transform: translateY(-3px); }
+  .frame { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #000; }
+  .frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .info { padding: 18px 20px 20px; }
+  .info b { font-size: 12px; letter-spacing: .2em; color: rgba(238,240,246,.5); font-weight: 600; }
+  .info h2 { font-size: 19px; margin: 6px 0 6px; }
+  .info p { font-size: 13.5px; line-height: 1.6; color: rgba(238,240,246,.62); }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 960px) { .grid, .grid.two { grid-template-columns: 1fr; } body { padding: 32px 16px; } }
+</style>
+</head>
+<body>
+  <h1>우주뽀모도로 디자인 초안</h1>
+  <p class="lead">카드를 누르면 전체 화면으로 열려요. 1440×900 데스크톱 기준이에요.</p>
+  <h1 style="font-size:18px;margin-top:40px">V5 · 개선안 (새 시안)</h1>
+  <div class="grid two" style="margin-top:20px">
+    <a class="card" href="v5-main.html">
+      <div class="frame"><iframe src="v5-main.html" loading="lazy" title="v5 메인"></iframe></div>
+      <div class="info"><b>V5 · MAIN</b><h2>메인 — 포스터 레터링 + 탑승권</h2><p>행성마다 다른 글꼴의 큰 이름과 과학 한 줄, 인쇄 질감 행성, 발사 전 탑승권, 오늘 목표·12주 기록·여권 도장이 들어간 통계 바.</p></div>
+    </a>
+    <a class="card" href="v5-flight.html">
+      <div class="frame"><iframe src="v5-flight.html" loading="lazy" title="v5 비행"></iframe></div>
+      <div class="info"><b>V5 · FOCUS</b><h2>비행 — 대기 산란 + 필름 그레이딩</h2><p>행성 대기가 실제처럼 빛을 산란하고, 장면 위에서 카운트다운해요. 순항 중엔 화면이 조용해지고(30fps), 25·50·75%마다 작은 천체가 지나가요. 도착하면 마지막 장면이 포스터와 도장으로 남아요. 톱니 버튼에서 화질·색감·사운드를 바꿔요.</p></div>
+    </a>
+  </div>
+  <h1 style="font-size:18px;margin-top:56px;color:rgba(238,240,246,.6)">현재 시안 (v3 · v4, 롤백용)</h1>
+  <div class="grid two" style="margin-top:20px">
+    <a class="card" href="v3-main.html">
+      <div class="frame"><iframe src="v3-main.html" loading="lazy" title="v3 메인"></iframe></div>
+      <div class="info"><b>V3 · MAIN</b><h2>메인 — 다음 목적지</h2><p>C 포스터 스타일을 바탕으로 행성을 크게 키웠어요. 오른쪽 아래에 할 일, 맨 아래에 A식 통계 바가 있어요. 발사하기를 누르면 비행 화면으로 넘어가요.</p></div>
+    </a>
+    <a class="card" href="v4-flight.html">
+      <div class="frame"><iframe src="v4-flight.html" loading="lazy" title="v4 비행"></iframe></div>
+      <div class="info"><b>V4 · FOCUS</b><h2>집중 — 우주 유영 + 태양계 시점</h2><p>디테일을 올린 우주선을 뒤따라가며 목적지로 날아가요. 뒤로 다른 행성들이 공전하고, 오른쪽 위 '태양계' 버튼(또는 V 키)을 누르면 전체 항로를 볼 수 있어요.</p></div>
+    </a>
+  </div>
+  <h1 style="font-size:18px;margin-top:56px;color:rgba(238,240,246,.6)">이전 초안</h1>
+  <div class="grid">
+    <a class="card" href="A-mission-control.html">
+      <div class="frame"><iframe src="A-mission-control.html" loading="lazy" title="초안 A"></iframe></div>
+      <div class="info"><b>DRAFT A</b><h2>관제 — 화성 지평선</h2><p>SpaceX 사이트처럼 영화 같은 화면. 행성 표면 위로 거대한 타이머가 뜨고, 하단 통계 바와 우측 미션 로그를 둬요.</p></div>
+    </a>
+    <a class="card" href="B-orbit.html">
+      <div class="frame"><iframe src="B-orbit.html" loading="lazy" title="초안 B"></iframe></div>
+      <div class="info"><b>DRAFT B</b><h2>궤도 — 살아있는 태양계</h2><p>영상 레퍼런스처럼 3D 태양계가 천천히 돌고, 주제마다 행성이 하나씩 있어요. 지구에서 목적지까지 항로가 실시간으로 보여요.</p></div>
+    </a>
+    <a class="card" href="C-interstellar.html">
+      <div class="frame"><iframe src="C-interstellar.html" loading="lazy" title="초안 C"></iframe></div>
+      <div class="info"><b>DRAFT C</b><h2>인터스텔라 — 포스터 시리즈</h2><p>NASA 포스터처럼 흑백 그레인과 가는 선, 주제마다 강조색 하나. 주제를 포스터 카드로 모아 보는 화면이에요.</p></div>
+    </a>
+  </div>
+<script>
+  function fit() {
+    document.querySelectorAll('.frame').forEach(f => {
+      f.querySelector('iframe').style.transform = `scale(${f.clientWidth / 1440})`;
+    });
+  }
+  addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

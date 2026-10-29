@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmodoro · 초안 B 궤도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<style>
+  :root {
+    --ink: #eef1fb;
+    --ink-2: rgba(238, 241, 251, .64);
+    --ink-3: rgba(238, 241, 251, .38);
+    --line: rgba(190, 205, 255, .12);
+    --line-2: rgba(190, 205, 255, .24);
+    --sun: #ffd27a;
+    --mars: #e0673b;
+    --venus: #e9cf9f;
+    --saturn: #d3b57c;
+    --neptune: #5f8dff;
+    --earth: #57a6e8;
+    --glass: rgba(10, 13, 24, .55);
+    --display: "Unbounded", "Pretendard Variable", sans-serif;
+    --body: "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+    --panel-w: 400px;
+    --rail-w: 76px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: #02030a; color: var(--ink); font-family: var(--body); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 42% 50%, rgba(2,3,10,0) 45%, rgba(2,3,10,.75) 100%),
+      linear-gradient(0deg, rgba(2,3,10,.8) 0%, rgba(2,3,10,0) 30%);
+  }
+
+  /* ---------- rail ---------- */
+  .rail {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--rail-w); z-index: 5;
+    display: flex; flex-direction: column; align-items: center; padding: 26px 0;
+    border-right: 1px solid var(--line); background: rgba(4,6,14,.35); backdrop-filter: blur(14px);
+  }
+  .logo { width: 34px; height: 34px; border-radius: 50%; position: relative; margin-bottom: 40px; }
+  .logo::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #fff6dc, var(--sun) 55%, #b86a1c); box-shadow: 0 0 18px rgba(255,210,122,.7); }
+  .logo::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px dashed rgba(238,241,251,.4); }
+  .rail a {
+    width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--ink-3);
+    margin-bottom: 10px; transition: background .3s, color .3s; position: relative;
+  }
+  .rail a:hover { color: var(--ink); background: rgba(255,255,255,.05); }
+  .rail a.on { color: var(--ink); background: rgba(255,255,255,.08); }
+  .rail a.on::before { content: ""; position: absolute; left: -15px; top: 12px; bottom: 12px; width: 2px; border-radius: 2px; background: var(--sun); box-shadow: 0 0 10px var(--sun); }
+  .rail .spacer { flex: 1; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #2b3555, #11162a); border: 1px solid var(--line-2); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+
+  /* ---------- stage overlay ---------- */
+  .stage { position: fixed; left: var(--rail-w); right: var(--panel-w); top: 0; bottom: 0; z-index: 3; pointer-events: none; }
+  .stage > * { pointer-events: auto; }
+  .top { position: absolute; left: 40px; right: 40px; top: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .wordmark { font-family: var(--display); font-weight: 500; font-size: 15px; letter-spacing: .3em; }
+  .route { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
+  .route i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .route .dash { width: 46px; height: 1px; background: repeating-linear-gradient(90deg, var(--ink-3) 0 3px, transparent 3px 6px); }
+  .live { text-align: right; font-size: 11px; letter-spacing: .22em; color: var(--ink-3); line-height: 1.8; }
+  .live b { color: var(--ink); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  .live b::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #7cf0b0; box-shadow: 0 0 10px #7cf0b0; }
+
+  .dests { position: absolute; left: 40px; top: 50%; transform: translateY(-46%); display: flex; flex-direction: column; gap: 6px; width: 210px; }
+  .dests h3 { font-size: 11px; letter-spacing: .24em; color: var(--ink-3); font-weight: 500; margin-bottom: 8px; }
+  .dest {
+    display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px;
+    border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: background .3s, border-color .3s;
+  }
+  .dest:hover { background: rgba(255,255,255,.04); }
+  .dest.on { background: rgba(14,18,34,.6); border-color: var(--line-2); backdrop-filter: blur(12px); }
+  .orb { width: 30px; height: 30px; border-radius: 50%; position: relative; }
+  .orb.mars { background: radial-gradient(circle at 32% 30%, #ffb08a, #c4532a 50%, #3b1206 100%); }
+  .orb.venus { background: radial-gradient(circle at 32% 30%, #fff1d4, #d8b98a 50%, #4a3a20 100%); }
+  .orb.saturn { background: radial-gradient(circle at 32% 30%, #fbe7bd, #c7a565 50%, #3e2f12 100%); }
+  .orb.saturn::after { content: ""; position: absolute; left: -7px; right: -7px; top: 12px; height: 6px; border-radius: 50%; border: 1.5px solid rgba(240,220,180,.75); transform: rotate(-16deg); }
+  .orb.neptune { background: radial-gradient(circle at 32% 30%, #c4d8ff, #4f7ce8 50%, #0f1d4a 100%); }
+  .orb.plus { border: 1px dashed var(--line-2); display: grid; place-items: center; color: var(--ink-3); }
+  .dest .n { font-size: 14px; font-weight: 600; }
+  .dest .n small { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 400; margin-top: 2px; }
+  .dest .h { font-family: var(--display); font-size: 12px; font-weight: 400; color: var(--ink-2); }
+  .dest.on .h { color: var(--sun); }
+
+  .timer-wrap { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); text-align: center; width: 560px; }
+  .mission {
+    display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; border-radius: 999px;
+    background: rgba(12,16,30,.6); border: 1px solid var(--line-2); backdrop-filter: blur(14px); font-size: 13px;
+  }
+  .mission .tag { font-size: 10.5px; letter-spacing: .14em; padding: 3px 8px; border-radius: 999px; background: rgba(224,103,59,.18); color: #ffb08a; }
+  .eta { margin-top: 18px; font-size: 11px; letter-spacing: .3em; color: var(--ink-3); }
+  .timer {
+    font-family: var(--display); font-weight: 200; font-size: 118px; letter-spacing: -.02em; line-height: 1; margin: 6px 0 14px;
+    font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255,210,122,.15);
+  }
+  .timer .colon { color: var(--sun); opacity: .9; }
+  .segs { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; }
+  .segs span { width: 64px; height: 3px; border-radius: 3px; background: var(--line-2); position: relative; overflow: hidden; }
+  .segs span.done { background: var(--ink-2); }
+  .segs span.cur::after { content: ""; position: absolute; inset: 0; width: 25%; background: var(--sun); box-shadow: 0 0 10px var(--sun); }
+  .segs-label { font-size: 12px; color: var(--ink-3); margin: -12px 0 22px; }
+  .controls { display: flex; gap: 16px; justify-content: center; align-items: center; }
+  .ctl {
+    width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(12,16,30,.5);
+    color: var(--ink); display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); transition: background .3s, transform .2s;
+  }
+  .ctl:hover { background: rgba(255,255,255,.1); }
+  .ctl:active { transform: scale(.94); }
+  .ctl.main { width: 68px; height: 68px; background: var(--ink); color: #0a0d18; border: 0; box-shadow: 0 0 0 6px rgba(238,241,251,.08), 0 10px 40px rgba(255,210,122,.25); }
+  .ctl.main:hover { background: #fff; }
+
+  /* planet labels */
+  .labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .plabel { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; will-change: transform; }
+  .plabel .stem { width: 26px; height: 1px; background: rgba(238,241,251,.45); }
+  .plabel .tx { font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+  .plabel .tx small { display: block; font-weight: 400; font-size: 10.5px; color: var(--ink-3); letter-spacing: .06em; margin-top: 1px; }
+  .plabel.on .tx { color: var(--sun); }
+  .plabel.home .tx { color: var(--ink-2); }
+
+  /* ---------- right panel ---------- */
+  .panel {
+    position: fixed; right: 0; top: 0; bottom: 0; width: var(--panel-w); z-index: 5;
+    background: linear-gradient(180deg, rgba(8,10,20,.78), rgba(6,8,16,.72));
+    border-left: 1px solid var(--line); backdrop-filter: blur(24px) saturate(140%); -webkit-backdrop-filter: blur(24px) saturate(140%);
+    padding: 28px 28px 22px; display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+  .seg button { font-family: var(--body); font-size: 13px; font-weight: 500; color: var(--ink-3); background: none; border: 0; padding: 8px 0; border-radius: 10px; cursor: pointer; transition: all .25s; }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: rgba(255,255,255,.1); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+
+  .total { margin-top: 24px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .total .k { font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+  .total .v { font-family: var(--display); font-size: 40px; font-weight: 300; letter-spacing: -.02em; line-height: 1; }
+  .total .v small { font-size: 16px; color: var(--ink-2); margin: 0 6px 0 3px; font-weight: 300; }
+  .delta { font-size: 12px; color: #8ef0b8; background: rgba(142,240,184,.1); padding: 4px 9px; border-radius: 999px; margin-bottom: 4px; }
+
+  .chart { margin-top: 22px; position: relative; height: 150px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: end; padding-left: 26px; }
+  .chart .grid { position: absolute; left: 26px; right: 0; border-top: 1px dashed var(--line); font-size: 10px; color: var(--ink-3); }
+  .chart .grid span { position: absolute; left: -26px; top: -7px; }
+  .col { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 2px; position: relative; z-index: 1; }
+  .col i { display: block; border-radius: 3px; }
+  .col.today i:last-child { box-shadow: 0 0 14px rgba(255,210,122,.4); }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; padding-left: 26px; margin-top: 8px; font-size: 11px; color: var(--ink-3); text-align: center; }
+  .days .t { color: var(--sun); font-weight: 600; }
+
+  .breakdown { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+  .brow { display: grid; grid-template-columns: 74px 1fr 66px; align-items: center; gap: 12px; font-size: 13px; }
+  .brow span:first-child { display: flex; align-items: center; gap: 8px; }
+  .brow span:first-child i { width: 8px; height: 8px; border-radius: 50%; }
+  .bar { height: 4px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; }
+  .bar b { display: block; height: 100%; border-radius: 4px; }
+  .brow .hh { white-space: nowrap; text-align: right; font-family: var(--display); font-size: 11.5px; color: var(--ink-2); font-weight: 400; }
+
+  .divider { height: 1px; background: var(--line); margin: 24px 0 20px; }
+  .todo-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .todo-head h3 { font-size: 15px; font-weight: 700; display: flex; align-items: baseline; gap: 8px; }
+  .todo-head h3 small { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+  .add-btn { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line-2); background: rgba(255,255,255,.04); color: var(--ink); display: grid; place-items: center; cursor: pointer; transition: background .25s; }
+  .add-btn:hover { background: rgba(255,255,255,.12); }
+  .todos { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .todo {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: center; padding: 11px 12px;
+    border-radius: 12px; background: rgba(255,255,255,.025); border: 1px solid transparent; cursor: pointer; transition: background .25s, border-color .25s;
+  }
+  .todo:hover { background: rgba(255,255,255,.05); }
+  .todo .box { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line-2); display: grid; place-items: center; }
+  .todo.done .box { background: var(--ink-3); border-color: transparent; color: #0a0d18; }
+  .todo .t { font-size: 13.5px; }
+  .todo.done .t { color: var(--ink-3); text-decoration: line-through; }
+  .todo .d { width: 8px; height: 8px; border-radius: 50%; }
+  .todo.cur { border-color: rgba(255,210,122,.35); background: rgba(255,210,122,.07); }
+  .todo.cur .box { border-color: var(--sun); }
+  .todo.cur .t small { display: block; font-size: 11px; color: var(--sun); margin-top: 2px; letter-spacing: .04em; }
+
+  @media (max-width: 1200px) {
+    :root { --panel-w: 340px; }
+    .dests { display: none; }
+    .timer { font-size: 92px; }
+    .timer-wrap { width: 100%; }
+  }
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .rail { display: none; }
+    .stage { position: relative; left: 0; right: 0; height: 100vh; }
+    .panel { position: relative; width: 100%; border-left: 0; }
+    .labels { display: none; }
+    .timer { font-size: 72px; }
+    .segs span { width: 44px; }
+    .top { left: 20px; right: 20px; }
+    .live { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+<div class="labels" id="labels"></div>
+
+<aside class="rail">
+  <div class="logo"></div>
+  <a href="#" class="on" aria-label="비행"><iconify-icon icon="solar:rocket-2-linear" width="22"></iconify-icon></a>
+  <a href="#" aria-label="할 일"><iconify-icon icon="solar:checklist-minimalistic-linear" width="22"></iconify-icon></a>
+  <a href="#" aria-label="기록"><iconify-icon icon="solar:chart-2-linear" width="22"></iconify-icon></a>
+  <a href="#" aria-label="주제"><iconify-icon icon="solar:planet-3-linear" width="22"></iconify-icon></a>
+  <div class="spacer"></div>
+  <a href="#" aria-label="설정"><iconify-icon icon="solar:settings-linear" width="22"></iconify-icon></a>
+  <div class="avatar">MJ</div>
+</aside>
+
+<main class="stage">
+  <div class="top">
+    <div>
+      <div class="wordmark">COSMODORO</div>
+      <div class="route"><i style="background:var(--earth)"></i>지구 기지<span class="dash"></span><i style="background:var(--mars)"></i>화성 · 코딩 항로</div>
+    </div>
+    <div class="live"><b>LIVE ORBIT</b><br>2026.10.24 · 14:26 KST</div>
+  </div>
+
+  <div class="dests">
+    <h3>목적지 선택</h3>
+    <div class="dest on"><span class="orb mars"></span><span class="n">화성<small>코딩</small></span><span class="h">18h</span></div>
+    <div class="dest"><span class="orb venus"></span><span class="n">금성<small>디자인</small></span><span class="h">12h</span></div>
+    <div class="dest"><span class="orb saturn"></span><span class="n">토성<small>독서</small></span><span class="h">13h</span></div>
+    <div class="dest"><span class="orb neptune"></span><span class="n">해왕성<small>영어</small></span><span class="h">9h</span></div>
+    <div class="dest"><span class="orb plus"><iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon></span><span class="n" style="color:var(--ink-3);font-weight:500">새 행성 만들기</span><span></span></div>
+  </div>
+
+  <div class="timer-wrap">
+    <div class="mission"><span class="tag">MISSION</span>로그인 화면 API 연결</div>
+    <div class="eta">화성 도착까지</div>
+    <div class="timer" id="timer">18<span class="colon">:</span>42</div>
+    <div class="segs"><span class="done"></span><span class="done"></span><span class="cur"></span><span></span></div>
+    <div class="segs-label">오늘 4번 비행 중 3번째 · 다음은 정거장 휴식 5분</div>
+    <div class="controls">
+      <button class="ctl" aria-label="비상 귀환"><iconify-icon icon="solar:stop-linear" width="20"></iconify-icon></button>
+      <button class="ctl main" aria-label="일시정지"><iconify-icon icon="solar:pause-bold" width="26"></iconify-icon></button>
+      <button class="ctl" aria-label="정거장으로 건너뛰기"><iconify-icon icon="solar:skip-next-linear" width="20"></iconify-icon></button>
+    </div>
+  </div>
+</main>
+
+<aside class="panel">
+  <div class="seg"><button>오늘</button><button class="on">이번 주</button><button>이번 달</button></div>
+
+  <div class="total">
+    <div><div class="k">이번 주 총 비행 시간</div><div class="v">14<small>h</small>05<small>m</small></div></div>
+    <span class="delta">▲ 12% 지난주 대비</span>
+  </div>
+
+  <div class="chart">
+    <div class="grid" style="bottom:100%"><span>4h</span></div>
+    <div class="grid" style="bottom:50%"><span>2h</span></div>
+    <div class="grid" style="bottom:0"><span>0</span></div>
+    <div class="col"><i style="height:22%;background:var(--neptune)"></i><i style="height:24%;background:var(--mars)"></i></div>
+    <div class="col"><i style="height:18%;background:var(--saturn)"></i><i style="height:20%;background:var(--venus)"></i><i style="height:34%;background:var(--mars)"></i></div>
+    <div class="col"><i style="height:12%;background:var(--neptune)"></i><i style="height:46%;background:var(--mars)"></i></div>
+    <div class="col"><i style="height:10%;background:var(--neptune)"></i><i style="height:22%;background:var(--saturn)"></i><i style="height:26%;background:var(--venus)"></i><i style="height:30%;background:var(--mars)"></i></div>
+    <div class="col"><i style="height:16%;background:var(--saturn)"></i><i style="height:24%;background:var(--venus)"></i></div>
+    <div class="col today"><i style="height:10%;background:var(--neptune)"></i><i style="height:14%;background:var(--venus)"></i><i style="height:42%;background:var(--mars)"></i></div>
+    <div class="col"><i style="height:3%;background:var(--line-2)"></i></div>
+  </div>
+  <div class="days"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="t">토</span><span>일</span></div>
+
+  <div class="breakdown">
+    <div class="brow"><span><i style="background:var(--mars)"></i>코딩</span><span class="bar"><b style="width:46%;background:var(--mars)"></b></span><span class="hh">6h 30m</span></div>
+    <div class="brow"><span><i style="background:var(--venus)"></i>디자인</span><span class="bar"><b style="width:22%;background:var(--venus)"></b></span><span class="hh">3h 05m</span></div>
+    <div class="brow"><span><i style="background:var(--saturn)"></i>독서</span><span class="bar"><b style="width:18%;background:var(--saturn)"></b></span><span class="hh">2h 30m</span></div>
+    <div class="brow"><span><i style="background:var(--neptune)"></i>영어</span><span class="bar"><b style="width:14%;background:var(--neptune)"></b></span><span class="hh">2h 00m</span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="todo-head">
+    <h3>할 일 <small>4개 남음</small></h3>
+    <button class="add-btn" aria-label="할 일 추가"><iconify-icon icon="solar:add-linear" width="16"></iconify-icon></button>
+  </div>
+  <ul class="todos">
+    <li class="todo cur"><span class="box"></span><span class="t">로그인 화면 API 연결<small>지금 비행 중</small></span><span class="d" style="background:var(--mars)"></span></li>
+    <li class="todo"><span class="box"></span><span class="t">통계 차트 컴포넌트 만들기</span><span class="d" style="background:var(--mars)"></span></li>
+    <li class="todo"><span class="box"></span><span class="t">온보딩 일러스트 시안 3개</span><span class="d" style="background:var(--venus)"></span></li>
+    <li class="todo"><span class="box"></span><span class="t">『코스모스』 7장 읽기</span><span class="d" style="background:var(--saturn)"></span></li>
+    <li class="todo done"><span class="box"><iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon></span><span class="t">아침 단어 30개 외우기</span><span class="d" style="background:var(--neptune)"></span></li>
+  </ul>
+</aside>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const NOISE = `
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0);
+  const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.0-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=0.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.0*x_);
+  vec4 x=x_*ns.x+ns.yyyy;
+  vec4 y=y_*ns.x+ns.yyyy;
+  vec4 h=1.0-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);
+  vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.0+1.0;
+  vec4 s1=floor(b1)*2.0+1.0;
+  vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+  m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+float fbm(vec3 p, int oct){
+  float f=0.0, a=0.5;
+  for(int i=0;i<7;i++){ if(i>=oct) break; f+=a*snoise(p); p*=2.03; a*=0.5; }
+  return f;
+}
+`;
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setClearColor(0x02030a, 1);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 4000);
+const PR = renderer.getPixelRatio();
+
+function panelWidth() {
+  const w = innerWidth;
+  if (w <= 860) return 0;
+  return w <= 1200 ? 340 : 400;
+}
+function railWidth() { return innerWidth <= 860 ? 0 : 76; }
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  const shift = (panelWidth() - railWidth()) / 2;
+  camera.setViewOffset(w + shift * 2, h, shift * 2, 0, w, h);
+  camera.updateProjectionMatrix();
+}
+resize();
+addEventListener('resize', resize);
+
+/* ---------- sun ---------- */
+const sunMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uCam: { value: camera.position } },
+  vertexShader: `
+    varying vec3 vObj; varying vec3 vN; varying vec3 vWorld;
+    void main(){ vObj = normalize(position); vN = normalize(mat3(modelMatrix)*normal); vec4 w = modelMatrix*vec4(position,1.0); vWorld = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `
+    uniform float uTime; uniform vec3 uCam;
+    varying vec3 vObj; varying vec3 vN; varying vec3 vWorld;
+    ${NOISE}
+    void main(){
+      float n = fbm(vObj * 3.2 + vec3(0.0, uTime * 0.04, 0.0), 4);
+      float g = fbm(vObj * 14.0 - vec3(uTime * 0.06), 3);
+      vec3 c = mix(vec3(1.0, 0.70, 0.30), vec3(1.0, 0.96, 0.78), smoothstep(-0.35, 0.45, n + g * 0.5));
+      vec3 V = normalize(uCam - vWorld);
+      float mu = max(dot(normalize(vN), V), 0.0);
+      c *= mix(0.72, 1.22, pow(mu, 0.45));
+      gl_FragColor = vec4(c * 1.08, 1.0);
+    }`,
+});
+const SUN_R = 2.0;
+const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(SUN_R, 96, 64), sunMat);
+scene.add(sunMesh);
+
+function glowTexture(stops, size = 256) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  stops.forEach(([o, col]) => grd.addColorStop(o, col));
+  g.fillStyle = grd; g.fillRect(0, 0, size, size);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function addGlow(tex, scale, opacity = 1) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity }));
+  s.scale.set(scale, scale, 1); scene.add(s); return s;
+}
+addGlow(glowTexture([[0, 'rgba(255,240,200,.9)'], [0.22, 'rgba(255,215,140,.55)'], [0.4, 'rgba(255,170,80,.16)'], [1, 'rgba(255,140,60,0)']]), 11);
+addGlow(glowTexture([[0, 'rgba(255,200,120,.35)'], [0.35, 'rgba(255,150,70,.08)'], [1, 'rgba(255,120,60,0)']]), 34, .9);
+
+/* ---------- shared point shader ---------- */
+function pointsMaterial({ attenuate = true, base = 1 } = {}) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uPR: { value: PR }, uBase: { value: base } },
+    vertexShader: `
+      attribute float aSize; attribute float aAlpha; attribute vec3 aColor; attribute float aPhase;
+      uniform float uTime; uniform float uPR; uniform float uBase;
+      varying vec3 vColor; varying float vAlpha;
+      void main(){
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mv;
+        float tw = 0.75 + 0.25 * sin(uTime * 1.2 + aPhase);
+        vColor = aColor; vAlpha = aAlpha * tw;
+        ${attenuate ? 'gl_PointSize = aSize * uPR * uBase * (60.0 / -mv.z);' : 'gl_PointSize = aSize * uPR;'}
+      }`,
+    fragmentShader: `
+      varying vec3 vColor; varying float vAlpha;
+      void main(){
+        float d = length(gl_PointCoord - 0.5);
+        float a = smoothstep(0.5, 0.0, d); a = pow(a, 1.6);
+        gl_FragColor = vec4(vColor * a * vAlpha, 1.0);
+      }`,
+    blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+  });
+}
+function buildPoints(list, mat) {
+  const n = list.length;
+  const pos = new Float32Array(n * 3), size = new Float32Array(n), alpha = new Float32Array(n), col = new Float32Array(n * 3), ph = new Float32Array(n);
+  list.forEach((p, i) => {
+    pos.set(p.pos, i * 3); size[i] = p.size; alpha[i] = p.alpha; col.set(p.color, i * 3); ph[i] = Math.random() * 6.28;
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+  g.setAttribute('aAlpha', new THREE.BufferAttribute(alpha, 1));
+  g.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1));
+  return new THREE.Points(g, mat);
+}
+const pointMats = [];
+
+/* ---------- background stars ---------- */
+{
+  const list = [];
+  const pal = [[1, 1, 1], [1, .9, .78], [.78, .86, 1], [1, .75, .6]];
+  for (let i = 0; i < 9000; i++) {
+    const v = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize().multiplyScalar(800 + Math.random() * 600);
+    list.push({ pos: [v.x, v.y, v.z], size: 0.7 + Math.random() * 1.6 + (Math.random() < .03 ? 2.2 : 0), alpha: 0.5 + Math.random() * 0.5, color: pal[(Math.random() * 4) | 0] });
+  }
+  const m = pointsMaterial({ attenuate: false }); pointMats.push(m);
+  scene.add(buildPoints(list, m));
+}
+/* ---------- warm dust in the ecliptic (like distant galaxy band) ---------- */
+{
+  const list = [];
+  for (let i = 0; i < 5000; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 26 + Math.random() * 140;
+    const y = (Math.random() - .5) * (6 + r * 0.12);
+    list.push({ pos: [Math.cos(a) * r, y, Math.sin(a) * r], size: 0.4 + Math.random() * 0.8, alpha: 0.25 + Math.random() * 0.45, color: Math.random() < .6 ? [1, .72, .48] : [.85, .88, 1] });
+  }
+  const m = pointsMaterial({ attenuate: true, base: 0.9 }); pointMats.push(m);
+  scene.add(buildPoints(list, m));
+}
+/* ---------- bokeh foreground ---------- */
+{
+  const list = [];
+  for (let i = 0; i < 220; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 18 + Math.random() * 30;
+    const y = (Math.random() - .5) * 26;
+    list.push({ pos: [Math.cos(a) * r, y, Math.sin(a) * r], size: 6 + Math.random() * 16, alpha: 0.05 + Math.random() * 0.14, color: [.92, .95, 1] });
+  }
+  const m = pointsMaterial({ attenuate: true, base: 1.0 }); pointMats.push(m);
+  scene.add(buildPoints(list, m));
+}
+
+/* ---------- orbits ---------- */
+const ORBITS = [
+  { r: 3.9 }, { r: 5.4, key: 'venus' }, { r: 7.0, key: 'earth' }, { r: 8.8, key: 'mars' },
+  { r: 11.6 }, { r: 14.6, key: 'saturn' }, { r: 17.4 }, { r: 20.2, key: 'neptune' },
+];
+ORBITS.forEach(o => {
+  const list = [];
+  const n = Math.floor(o.r * 70);
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2;
+    list.push({ pos: [Math.cos(a) * o.r, 0, Math.sin(a) * o.r], size: o.key ? 0.55 : 0.4, alpha: o.key ? 0.85 : 0.45, color: [.72, .78, 1] });
+  }
+  const m = pointsMaterial({ attenuate: true, base: 1 }); pointMats.push(m);
+  scene.add(buildPoints(list, m));
+  const curve = new THREE.EllipseCurve(0, 0, o.r, o.r);
+  const pts = curve.getPoints(256).map(p => new THREE.Vector3(p.x, 0, p.y));
+  const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x8fa2ff, transparent: true, opacity: o.key ? 0.16 : 0.07, blending: THREE.AdditiveBlending, depthWrite: false }));
+  scene.add(line);
+});
+/* asteroid belt */
+{
+  const list = [];
+  for (let i = 0; i < 2600; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 10.1 + Math.random() * 0.9 + (Math.random() - .5) * 0.6;
+    list.push({ pos: [Math.cos(a) * r, (Math.random() - .5) * 0.35, Math.sin(a) * r], size: 0.25 + Math.random() * 0.45, alpha: 0.45 + Math.random() * 0.5, color: [1, .78, .56] });
+  }
+  const m = pointsMaterial({ attenuate: true, base: 1 }); pointMats.push(m);
+  scene.add(buildPoints(list, m));
+}
+
+/* ---------- planets ---------- */
+const planetVS = `
+  varying vec3 vObj; varying vec3 vN; varying vec3 vWorld;
+  void main(){ vObj = normalize(position); vN = normalize(mat3(modelMatrix)*normal); vec4 w = modelMatrix*vec4(position,1.0); vWorld = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }`;
+const planetFS = `
+  uniform vec3 uA; uniform vec3 uB; uniform vec3 uC; uniform vec3 uAtmo; uniform float uType; uniform float uSeed; uniform vec3 uCam;
+  varying vec3 vObj; varying vec3 vN; varying vec3 vWorld;
+  ${NOISE}
+  void main(){
+    vec3 p = vObj + vec3(uSeed);
+    vec3 col;
+    if (uType < 0.5) {
+      float n = fbm(p * 2.2, 5);
+      float m = fbm(p * 7.0 + 5.0, 4);
+      col = mix(uA, uB, smoothstep(-0.45, 0.25, n));
+      col = mix(col, uC, smoothstep(0.05, 0.6, m * 0.6 + n * 0.5));
+    } else if (uType < 1.5) {
+      float turb = fbm(p * vec3(2.4, 7.0, 2.4), 4) * 0.22;
+      float lat = vObj.y + turb;
+      float b = sin(lat * 19.0) * 0.5 + 0.5;
+      float b2 = sin(lat * 7.0 + 1.3) * 0.5 + 0.5;
+      col = mix(uA, uB, b);
+      col = mix(col, uC, b2 * 0.55);
+    } else {
+      float n = fbm(p * 1.7, 6);
+      vec3 land = mix(uB, uC, smoothstep(0.0, 0.5, fbm(p * 5.0, 4)));
+      col = mix(uA, land, smoothstep(0.03, 0.09, n));
+      float cl = smoothstep(0.05, 0.55, fbm(p * 2.6 + vec3(0.0, 0.0, 1.7), 5));
+      col = mix(col, vec3(0.96), cl * 0.75);
+      col = mix(col, vec3(0.95), smoothstep(0.8, 0.9, abs(vObj.y)));
+    }
+    vec3 N = normalize(vN);
+    vec3 L = normalize(-vWorld);
+    vec3 V = normalize(uCam - vWorld);
+    float ndl = max(dot(N, L), 0.0);
+    float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    vec3 c = col * (pow(ndl, 0.85) * 1.35 + 0.06) + vec3(0.04, 0.06, 0.12) * (1.0 - ndl) + uAtmo * fres * (0.18 + ndl * 0.9);
+    gl_FragColor = vec4(c, 1.0);
+  }`;
+function planetMaterial(o) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uA: { value: new THREE.Color(o.a) }, uB: { value: new THREE.Color(o.b) }, uC: { value: new THREE.Color(o.c) },
+      uAtmo: { value: new THREE.Color(o.atmo) }, uType: { value: o.type }, uSeed: { value: o.seed }, uCam: { value: camera.position },
+    },
+    vertexShader: planetVS, fragmentShader: planetFS,
+  });
+}
+const PLANETS = {
+  venus:   { r: 5.4,  size: 0.5,  speed: 0.030, phase: 1.4, type: 0, a: '#8a6a3c', b: '#d9bd8c', c: '#f5e6c4', atmo: '#ffe2b0', seed: 3.1, label: '금성', topic: '디자인', hours: '이번 달 12h' },
+  earth:   { r: 7.0,  size: 0.42, speed: 0.022, phase: 6.0, type: 2, a: '#123a7a', b: '#3e6b3a', c: '#a08a5a', atmo: '#7fb6ff', seed: 7.7, label: '지구 기지', topic: '출발지', hours: '' },
+  mars:    { r: 8.8,  size: 0.62, speed: 0.016, phase: 5.29, type: 0, a: '#3a1206', b: '#a9442a', c: '#e09062', atmo: '#ff9a6a', seed: 1.3, label: '화성', topic: '코딩', hours: '이번 달 18h' },
+  saturn:  { r: 14.6, size: 0.9,  speed: 0.008, phase: 5.36, type: 1, a: '#c9a96e', b: '#e8d6a8', c: '#8a6d40', atmo: '#ffe6b8', seed: 5.5, label: '토성', topic: '독서', hours: '이번 달 13h' },
+  neptune: { r: 20.2, size: 0.72, speed: 0.005, phase: 5.6, type: 1, a: '#2f5fd0', b: '#5b8cff', c: '#1d3a8c', atmo: '#9cc0ff', seed: 9.2, label: '해왕성', topic: '영어', hours: '이번 달 9h' },
+};
+const DECOR = [
+  { r: 3.9, size: 0.22, speed: 0.05, phase: 1.0, type: 0, a: '#4a4440', b: '#8c847c', c: '#c2bab0', atmo: '#ffffff', seed: 4.4 },
+  { r: 11.6, size: 1.15, speed: 0.011, phase: 2.9, type: 1, a: '#b07a52', b: '#e8d2b4', c: '#8a4a2c', atmo: '#ffd8b0', seed: 2.2 },
+  { r: 17.4, size: 0.6, speed: 0.006, phase: 4.0, type: 1, a: '#8fd0d8', b: '#b6e6ea', c: '#6ab0bc', atmo: '#c8f4ff', seed: 6.6 },
+];
+const bodies = [];
+function addPlanet(key, o) {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(o.size, 64, 48), planetMaterial(o));
+  mesh.rotation.z = 0.3;
+  scene.add(mesh);
+  const b = { key, o, mesh };
+  if (key === 'saturn') {
+    const inner = o.size * 1.35, outer = o.size * 2.4;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 160, 1), new THREE.ShaderMaterial({
+      uniforms: { uIn: { value: inner }, uOut: { value: outer } },
+      vertexShader: `varying vec3 vL; void main(){ vL = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        uniform float uIn; uniform float uOut; varying vec3 vL;
+        void main(){
+          float r = (length(vL.xy) - uIn) / (uOut - uIn);
+          float bands = 0.55 + 0.45 * sin(r * 70.0) * sin(r * 23.0 + 1.0);
+          float gap = smoothstep(0.58, 0.6, r) * (1.0 - smoothstep(0.63, 0.65, r));
+          float a = (0.25 + 0.6 * bands) * (1.0 - gap * 0.9) * smoothstep(0.0, 0.06, r) * (1.0 - smoothstep(0.92, 1.0, r));
+          vec3 c = mix(vec3(0.78, 0.66, 0.46), vec3(0.98, 0.92, 0.78), bands);
+          gl_FragColor = vec4(c * a, a);
+        }`,
+      transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.NormalBlending,
+    }));
+    ring.rotation.x = -Math.PI / 2 + 0.62;
+    ring.rotation.y = 0.18;
+    mesh.add(ring);
+  }
+  if (key === 'mars') {
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture([[0, 'rgba(255,160,110,.5)'], [0.4, 'rgba(255,120,70,.12)'], [1, 'rgba(255,100,60,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    halo.scale.set(o.size * 6, o.size * 6, 1);
+    mesh.add(halo);
+  }
+  bodies.push(b);
+  return b;
+}
+Object.entries(PLANETS).forEach(([k, o]) => addPlanet(k, o));
+DECOR.forEach((o, i) => addPlanet('decor' + i, o));
+const byKey = Object.fromEntries(bodies.map(b => [b.key, b]));
+
+/* ---------- trajectory Earth -> Mars ---------- */
+const TRAJ_N = 160;
+const PROGRESS = 0.252;
+const trajGeo = new THREE.BufferGeometry();
+const trajPos = new Float32Array(TRAJ_N * 3), trajSize = new Float32Array(TRAJ_N), trajAlpha = new Float32Array(TRAJ_N), trajCol = new Float32Array(TRAJ_N * 3), trajPh = new Float32Array(TRAJ_N);
+for (let i = 0; i < TRAJ_N; i++) {
+  const t = i / (TRAJ_N - 1);
+  const done = t <= PROGRESS;
+  trajSize[i] = done ? 1.3 : 0.75;
+  trajAlpha[i] = done ? 1.0 : 0.55;
+  trajCol.set(done ? [1, .82, .48] : [1, .9, .75], i * 3);
+}
+trajGeo.setAttribute('position', new THREE.BufferAttribute(trajPos, 3));
+trajGeo.setAttribute('aSize', new THREE.BufferAttribute(trajSize, 1));
+trajGeo.setAttribute('aAlpha', new THREE.BufferAttribute(trajAlpha, 1));
+trajGeo.setAttribute('aColor', new THREE.BufferAttribute(trajCol, 3));
+trajGeo.setAttribute('aPhase', new THREE.BufferAttribute(trajPh, 1));
+const trajMat = pointsMaterial({ attenuate: true, base: 1 }); pointMats.push(trajMat);
+scene.add(new THREE.Points(trajGeo, trajMat));
+const ship = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture([[0, 'rgba(255,255,255,1)'], [0.12, 'rgba(255,230,180,.9)'], [0.35, 'rgba(255,190,110,.25)'], [1, 'rgba(255,160,80,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+ship.scale.set(1.6, 1.6, 1);
+scene.add(ship);
+const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3());
+const tmp = new THREE.Vector3();
+function updateTrajectory() {
+  const a = byKey.earth.mesh.position, b = byKey.mars.mesh.position;
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const out = mid.clone().setY(0).normalize().multiplyScalar(2.4);
+  curve.v0.copy(a); curve.v2.copy(b); curve.v1.copy(mid).add(out).setY(1.6);
+  for (let i = 0; i < TRAJ_N; i++) {
+    curve.getPoint(i / (TRAJ_N - 1), tmp);
+    trajPos[i * 3] = tmp.x; trajPos[i * 3 + 1] = tmp.y; trajPos[i * 3 + 2] = tmp.z;
+  }
+  trajGeo.attributes.position.needsUpdate = true;
+  curve.getPoint(PROGRESS, ship.position);
+}
+
+/* ---------- labels ---------- */
+const labelsEl = document.getElementById('labels');
+const labelKeys = ['venus', 'earth', 'mars', 'saturn', 'neptune'];
+const labelEls = {};
+labelKeys.forEach(k => {
+  const o = PLANETS[k];
+  const el = document.createElement('div');
+  el.className = 'plabel' + (k === 'mars' ? ' on' : '') + (k === 'earth' ? ' home' : '');
+  el.innerHTML = `<span class="stem"></span><span class="tx">${o.label} · ${o.topic}${o.hours ? `<small>${o.hours}</small>` : ''}</span>`;
+  labelsEl.appendChild(el);
+  labelEls[k] = el;
+});
+const proj = new THREE.Vector3();
+function updateLabels() {
+  const w = innerWidth, h = innerHeight;
+  labelKeys.forEach(k => {
+    const b = byKey[k];
+    proj.copy(b.mesh.position);
+    proj.project(camera);
+    const x = (proj.x + 1) / 2 * w;
+    const y = (1 - proj.y) / 2 * h;
+    const el = labelEls[k];
+    const minX = w > 1200 ? 350 : 90;
+    const visible = proj.z < 1 && x > minX && x < w - panelWidth() - 120;
+    el.style.opacity = visible ? 1 : 0;
+    const pxR = b.o.size * 60 / Math.max(1, camera.position.distanceTo(b.mesh.position)) * 10;
+    el.style.transform = `translate(${x + Math.max(10, pxR)}px, ${y - 14}px)`;
+  });
+}
+
+/* ---------- loop ---------- */
+const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+addEventListener('pointermove', e => { pointer.tx = e.clientX / innerWidth - .5; pointer.ty = e.clientY / innerHeight - .5; });
+const clock = new THREE.Clock();
+const CAM_R = 43, CAM_H = 11.5;
+function frame() {
+  const t = clock.getElapsedTime() + 40;
+  pointer.x += (pointer.tx - pointer.x) * 0.03;
+  pointer.y += (pointer.ty - pointer.y) * 0.03;
+  const ang = -0.6 + t * 0.012 + pointer.x * 0.25;
+  camera.position.set(Math.sin(ang) * CAM_R, CAM_H + pointer.y * -3, Math.cos(ang) * CAM_R);
+  camera.lookAt(0, -3.2, 0);
+  bodies.forEach(b => {
+    const a = b.o.phase + t * b.o.speed;
+    b.mesh.position.set(Math.cos(a) * b.o.r, 0, Math.sin(a) * b.o.r);
+    b.mesh.rotation.y = t * 0.08;
+  });
+  updateTrajectory();
+  sunMat.uniforms.uTime.value = t;
+  pointMats.forEach(m => m.uniforms.uTime.value = t);
+  renderer.render(scene, camera);
+  updateLabels();
+  requestAnimationFrame(frame);
+}
+frame();
+
+/* ---------- countdown (static demo) ---------- */
+let remain = 18 * 60 + 42;
+const timerEl = document.getElementById('timer');
+setInterval(() => {
+  remain = Math.max(0, remain - 1);
+  timerEl.innerHTML = `${String(Math.floor(remain / 60)).padStart(2, '0')}<span class="colon">:</span>${String(remain % 60).padStart(2, '0')}`;
+}, 1000);
+</script>
+</body>
+</html>
