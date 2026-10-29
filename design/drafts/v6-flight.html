@@ -676,8 +676,8 @@ const starMat = starMaterial();
 let stars = null, STAR_EQ = null;
 async function loadStars() {
   try {
-    const buf = await (await fetch('assets/stars_mag75.bin')).arrayBuffer();
-    const u = new Uint16Array(buf), n = u.length / 4;
+    const file = await (await fetch('assets/stars_mag75.json')).json();
+    const u = new Uint16Array(Uint8Array.from(atob(file.data), ch => ch.charCodeAt(0)).buffer), n = u.length / 4;
     STAR_EQ = new Float32Array(n * 3);
     const g = new THREE.BufferGeometry();
     const flux = new Float32Array(n), col = new Float32Array(n * 3), c = new THREE.Color();
