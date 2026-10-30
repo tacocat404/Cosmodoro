@@ -274,6 +274,23 @@
   /* v6: the scene fades in once the real maps and the star catalogue have arrived */
   #scene { opacity: 0; transition: opacity 1.4s ease; }
   body.live #scene { opacity: 1; }
+  /* drag to look around the ship (or the map); the cursor says so */
+  body { cursor: grab; touch-action: none; }
+  body.orbiting { cursor: grabbing; }
+  .arr-card { touch-action: pan-y; }
+  .hk-hint { color: var(--ink-3); }
+  /* long-range camera: a small telescope window that shows the destination as a disc while it is still a point outside */
+  .scope { position: absolute; right: 40px; top: 176px; width: 220px; height: 138px; pointer-events: none; opacity: 0; transition: opacity .8s; }
+  .scope::before { content: ""; position: absolute; inset: 0; border: 1px solid rgba(242,242,239,.16); }
+  .scope i { position: absolute; width: 8px; height: 8px; border: 0 solid rgba(242,242,239,.5); }
+  .scope i:nth-child(1) { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+  .scope i:nth-child(2) { right: -1px; top: -1px; border-width: 1px 1px 0 0; }
+  .scope i:nth-child(3) { left: -1px; bottom: -1px; border-width: 0 0 1px 1px; }
+  .scope i:nth-child(4) { right: -1px; bottom: -1px; border-width: 0 1px 1px 0; }
+  .scope-meta { position: absolute; left: 0; right: 0; top: calc(100% + 8px); display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--ink-3); }
+  .scope-meta b { font-weight: 500; color: var(--ink-2); letter-spacing: .06em; }
+  body.calm .scope { opacity: calc(var(--scope-op, 0) * .7) !important; }
+  @media (max-width: 900px) { .scope { display: none; } }
   .cd-load { margin-top: 22px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--ink-3); transition: opacity .6s; }
   body.live .cd-load { opacity: 0; }
   .credits { font-family: var(--mono); font-size: 9px; line-height: 1.6; letter-spacing: .02em; color: var(--ink-3); max-width: 286px; }
@@ -313,6 +330,8 @@
       <div class="hud-keys">
         <button class="hk" id="viewKey" aria-label="시점 전환 (V)"><kbd>V</kbd><span id="viewName">우주선 시점</span></button>
         <span>·</span>
+        <span class="hk-hint" title="드래그로 회전, 휠로 거리, 더블클릭이나 R로 원위치">드래그 · 둘러보기</span>
+        <span>·</span>
         <button class="hk more" id="gearBtn" aria-label="설정">⋯</button>
       </div>
       <div class="settings" id="settings">
@@ -332,6 +351,7 @@
     </div>
   </div>
 
+  <div class="scope" id="scope" aria-hidden="true"><i></i><i></i><i></i><i></i><div class="scope-meta"><span>LONG-RANGE CAM</span><b id="scopeTxt">—</b></div></div>
   <div class="log t2" id="log"></div>
 
   <div class="bottom">
@@ -1463,8 +1483,8 @@ function atlasCamera(dt) {
   /* sit 60 deg off the sun line so the planet is lit with a clear terminator, a little above it */
   atA.set(-P.x, 0, -P.z).normalize();
   atB.crossVectors(UP, atA).normalize();
-  atA.multiplyScalar(Math.cos(1.05)).addScaledVector(atB, Math.sin(1.05));
-  atP.copy(P).addScaledVector(atA, R * 3.4).addScaledVector(UP, R * 0.45);
+  atA.multiplyScalar(Math.cos(1.05 + ORB.yaw)).addScaledVector(atB, Math.sin(1.05 + ORB.yaw));
+  atP.copy(P).addScaledVector(atA, R * 3.4 * ORB.zoom).addScaledVector(UP, R * (0.45 + ORB.pitch * 2.2) * ORB.zoom);
   atB.copy(P).sub(atP); atC.crossVectors(atB, UP).normalize();
   atL.copy(P).addScaledVector(atC, -R * 1.1);
   if (!AT.primed) { AT.pos.copy(atP); AT.look.copy(atL); AT.primed = true; }
@@ -1508,12 +1528,14 @@ function focusPlanet(key) {
   if (AT.focus !== key) { AT.edit = false; AT.armed = false; AT.justMade = false; }
   AT.focus = AT.shown = key;
   loadPlanet(key, true);
+  orbitReset();
   document.body.classList.add('focus');
   $('atlasBackText').textContent = '태양계';
   renderDetail();
 }
 function unfocus() {
   AT.focus = null;
+  orbitReset();
   document.body.classList.remove('focus');
   $('atlasBackText').textContent = '돌아가기';
 }
@@ -1557,6 +1579,7 @@ if (ATLAS) {
   });
   $('pdCat').addEventListener('keydown', e => { if (e.target.id === 'pdInput' && e.key === 'Enter') { e.preventDefault(); commitName(); } });
   addEventListener('click', e => {
+    if (ORB.moved) { ORB.moved = false; return; }
     if (e.target.closest('button, input, .pd, .atlas-back, .top')) return;
     const lab = e.target.closest('.plabel[data-key]');
     if (lab) { focusPlanet(lab.dataset.key); return; }
@@ -1794,8 +1817,35 @@ document.querySelectorAll('#soundToast [data-sound]').forEach(b => b.addEventLis
    a quality-dependent rate while coasting, 15 fps when paused, nothing while the tab is hidden.
    The timer runs on wall-clock time, so it keeps counting in the background.
    ========================================================= */
-const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
-addEventListener('pointermove', e => { pointer.tx = e.clientX / innerWidth - .5; pointer.ty = e.clientY / innerHeight - .5; });
+/* look around: drag to orbit the camera around the ship (or the map), wheel for distance, double-click or R to reset */
+const ORB = { yaw: 0, pitch: 0, zoom: 1, ty: 0, tp: 0, tz: 1, drag: null, moved: false, at: -1e9 };
+const orbitReset = () => { ORB.ty = 0; ORB.tp = 0; ORB.tz = 1; ORB.at = performance.now(); };
+const UI_HIT = 'button, a, input, label, .settings, .pd, .arrival, .toast, .atlas-back';
+const onUI = (e, sel = UI_HIT) => !!(e.target && e.target.closest && e.target.closest(sel));
+addEventListener('pointerdown', e => {
+  if (e.button !== 0 || onUI(e)) return;
+  ORB.drag = { x: e.clientX, y: e.clientY }; ORB.moved = false;
+});
+addEventListener('pointermove', e => {
+  if (!ORB.drag) return;
+  const dx = e.clientX - ORB.drag.x, dy = e.clientY - ORB.drag.y;
+  if (!ORB.moved && Math.hypot(dx, dy) < 5) return;
+  ORB.moved = true; ORB.drag.x = e.clientX; ORB.drag.y = e.clientY;
+  ORB.ty -= dx * 0.005;
+  ORB.tp = THREE.MathUtils.clamp(ORB.tp + dy * 0.004, -1.1, 1.1);
+  ORB.at = performance.now();
+  document.body.classList.add('orbiting');
+});
+const endDrag = () => { ORB.drag = null; document.body.classList.remove('orbiting'); };
+addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+addEventListener('wheel', e => {
+  if (onUI(e, '.settings, .pd, .arrival')) return;
+  ORB.tz = THREE.MathUtils.clamp(ORB.tz * Math.exp(e.deltaY * 0.0012), 0.55, 3);
+  ORB.at = performance.now();
+}, { passive: true });
+addEventListener('dblclick', e => { if (!onUI(e)) orbitReset(); });
+addEventListener('keydown', e => { if ((e.key === 'r' || e.key === 'R') && e.target.tagName !== 'INPUT') orbitReset(); });
+const qOrb = new THREE.Quaternion(), qOrb2 = new THREE.Quaternion(), orbAxis = new THREE.Vector3(), orbOff = new THREE.Vector3(), orbDir = new THREE.Vector3();
 const clock = new THREE.Clock();
 let lastWall = performance.now(), lastDraw = 0, uiTick = 0, titleAt = 0, idle = 0, flareS = 0, frameNo = 0;
 const UP = new THREE.Vector3(0, 1, 0), NEG_Z = new THREE.Vector3(0, 0, -1);
@@ -1816,7 +1866,7 @@ function targetFps() {
   if (F.paused) return 15;
   const settling = Math.abs(F.m - (F.view === 'system' ? 1 : 0)) > 0.004;
   const p = F.elapsed / F.total;
-  const busy = !F.started || F.clock < T_HOLD + T_SWING + 4 || settling || (F.arrived && F.arrT < 8) || p > FLIP0 - 0.004 || ATLAS;
+  const busy = performance.now() - ORB.at < 1500 || !F.started || F.clock < T_HOLD + T_SWING + 4 || settling || (F.arrived && F.arrT < 8) || p > FLIP0 - 0.004 || ATLAS;
   return busy ? 60 : QUALITY[qKey].cruise;
 }
 function loop(now) {
@@ -1841,6 +1891,55 @@ function screenDisc(pos, radius, out) {
   return out;
 }
 const SD = { r: 0, x: 0, y: 0, cover: 0, centre: 0, front: false };
+
+/* long-range camera: renders the far scene again through a narrow lens aimed at the destination, into a small
+   HDR target, then tone-maps it into its window on the canvas. It fades out once the destination is a real disc on screen. */
+const SCOPE = { w: 220, h: 138, right: 40, top: 176, op: 0, txtAt: 0 };
+const scopeCam = new THREE.PerspectiveCamera(1, SCOPE.w / SCOPE.h, 0.05, 30000);
+const scopeRT = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 });
+const scopeScene = new THREE.Scene(), quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const scopeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+  uniforms: { tMap: { value: scopeRT.texture }, uOp: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `uniform sampler2D tMap; uniform float uOp; varying vec2 vUv;
+    void main(){
+      gl_FragColor = vec4(max(texture2D(tMap, vUv).rgb, vec3(0.0)), 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      gl_FragColor.a = uOp;
+    }`,
+  transparent: true, depthTest: false, depthWrite: false,
+}));
+scopeQuad.frustumCulled = false; scopeScene.add(scopeQuad);
+const scopeEl = $('scope'), scopeTxt = $('scopeTxt'), _sv = new THREE.Vector4();
+function drawScope(p, thD, stage) {
+  screenDisc(bodies[destKey].tilt.position, PLANETS[destKey].size * bodies[destKey].tilt.scale.x, SD);
+  let target = ATLAS || innerWidth <= 900 || F.arrived ? 0 : stage * (1 - smooth(SD.r, 28, 70)) * smooth(F.clock, T_HOLD + T_SWING, T_HOLD + T_SWING + 6);
+  SCOPE.op += (target - SCOPE.op) * 0.08;
+  scopeEl.style.opacity = SCOPE.op; scopeEl.style.setProperty('--scope-op', SCOPE.op);
+  if (SCOPE.op < 0.01) return;
+  const fovDeg = Math.max(0.12, thD * 2 / DEG / 0.5);
+  scopeCam.fov = fovDeg; scopeCam.updateProjectionMatrix();
+  scopeCam.position.copy(camera.position); scopeCam.up.copy(up);
+  scopeCam.lookAt(tmp.copy(camera.position).add(fwd)); scopeCam.updateMatrixWorld();
+  const w = Math.round(SCOPE.w * PR), h = Math.round(SCOPE.h * PR);
+  if (scopeRT.width !== w || scopeRT.height !== h) scopeRT.setSize(w, h);
+  /* in a narrow lens on a sunlit disc, only the brightest stars survive the exposure */
+  const vis0 = starMat.uniforms.uVis.value, sky0 = skyU.uVis.value;
+  starMat.uniforms.uVis.value = 0.12; skyU.uVis.value = 0.12; pStars.visible = false;
+  renderer.setRenderTarget(scopeRT); renderer.clear(); renderer.render(farScene, scopeCam);
+  starMat.uniforms.uVis.value = vis0; skyU.uVis.value = sky0; pStars.visible = true;
+  renderer.setRenderTarget(null);
+  renderer.getViewport(_sv);
+  const x = innerWidth - SCOPE.right - SCOPE.w, y = innerHeight - SCOPE.top - SCOPE.h;
+  renderer.autoClear = false;
+  renderer.setScissorTest(true); renderer.setScissor(x, y, SCOPE.w, SCOPE.h); renderer.setViewport(x, y, SCOPE.w, SCOPE.h);
+  scopeQuad.material.uniforms.uOp.value = SCOPE.op;
+  renderer.render(scopeScene, quadCam);
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
+  renderer.autoClear = true;
+  if (performance.now() - SCOPE.txtAt > 1000) { SCOPE.txtAt = performance.now(); scopeTxt.textContent = `${T.en} · ${fovDeg < 1 ? fovDeg.toFixed(2) : fovDeg.toFixed(1)}°`; }
+}
 
 function frame(now) {
   frameNo++;
@@ -1894,7 +1993,6 @@ function frame(now) {
   sunDirShip.copy(shipPos).negate().normalize().lerp(sunFlight, stage).normalize();
 
   /* --- cameras --- */
-  pointer.x += (pointer.tx - pointer.x) * 0.03; pointer.y += (pointer.ty - pointer.y) * 0.03;
   const sw = RM ? 0 : 1;
   /* a chase craft with a long-lens operator: no roll, a slow multi-period drift well under 0.5 deg a minute */
   const yawN = (0.0045 * Math.sin(time * 0.1337) + 0.003 * Math.sin(time * 0.0861 + 1.3) + 0.002 * Math.sin(time * 0.0479 + 2.1)) * sw;
@@ -1917,9 +2015,21 @@ function frame(now) {
     chasePos.lerp(backPos, 1 - smooth(swing, 0.75, 1));
     chaseLook.copy(chasePos).add(tmp);
   }
-  const sysDist = ATLAS ? 74 : 64, sysK = sysDist / 40;
-  const az = E0 + T.arc * 0.5 + 1.25 + time * 0.008 + pointer.x * 0.3;
-  sysPos.set(Math.cos(az) * sysDist * 0.9, sysDist * (0.42 - pointer.y * 0.1), -Math.sin(az) * sysDist * 0.9);
+  /* the viewer's own orbit around the ship: the same turn moves the camera and its view, so the ship stays put on screen */
+  const ok = Math.min(1, dt * 6);
+  ORB.yaw += (ORB.ty - ORB.yaw) * ok; ORB.pitch += (ORB.tp - ORB.pitch) * ok; ORB.zoom += (ORB.tz - ORB.zoom) * ok;
+  if (Math.abs(ORB.yaw) + Math.abs(ORB.pitch) + Math.abs(ORB.zoom - 1) > 1e-4) {
+    orbOff.copy(chasePos).sub(shipPos);
+    orbDir.copy(chaseLook).sub(chasePos);
+    orbAxis.crossVectors(orbOff, up).normalize();
+    qOrb.setFromAxisAngle(up, ORB.yaw).multiply(qOrb2.setFromAxisAngle(orbAxis, ORB.pitch));
+    orbOff.applyQuaternion(qOrb).multiplyScalar(ORB.zoom); orbDir.applyQuaternion(qOrb);
+    chasePos.copy(shipPos).add(orbOff); chaseLook.copy(chasePos).add(orbDir);
+  }
+  const sysDist = (ATLAS ? 74 : 64) * (AT.focus ? 1 : ORB.zoom), sysK = (ATLAS ? 74 : 64) / 40;
+  const az = E0 + T.arc * 0.5 + 1.25 + time * 0.008 + (AT.focus ? 0 : ORB.yaw);
+  const sysH = THREE.MathUtils.clamp(0.42 + (AT.focus ? 0 : ORB.pitch) * 0.45, 0.04, 1.2);
+  sysPos.set(Math.cos(az) * sysDist * 0.9, sysDist * sysH, -Math.sin(az) * sysDist * 0.9);
   sysLook.set(-Math.sin(az) * 6, -sysDist * 0.13, -Math.cos(az) * 6);
   camera.position.copy(chasePos).lerp(sysPos, e);
   lookAt.copy(chaseLook).lerp(sysLook, e);
@@ -2137,6 +2247,7 @@ function frame(now) {
   grade.uniforms.uSun.value.set((sunNdc.x + 1) / 2, (sunNdc.y + 1) / 2, flareS * stage);
 
   composer.render();
+  drawScope(p, thD, stage);
   if (F.snap) { F.snap = false; buildPoster(); showArrival(); }
 
   /* --- labels + destination reticle --- */

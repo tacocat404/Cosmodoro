@@ -1492,7 +1492,7 @@ function scrambleTo(node, text, glyphs = GLYPHS) {
 function launchHref() {
   const m = missions[state.mission];
   const q = new URLSearchParams({ topic: state.topic, min: state.dur, mission: m ? m.t : '자유 비행', no: m ? pad2(state.mission + 1) : '—' });
-  return `v5-flight.html?${q.toString()}`;
+  return `v6-flight.html?${q.toString()}`;
 }
 function renderCopy() {
   const t = TOPICS[state.topic];
@@ -1535,7 +1535,7 @@ $('topics').addEventListener('click', e => {
 /* 새 행성 opens the solar system (the flight page's atlas mode) to pick a planet for a new category */
 $('newPlanet').addEventListener('click', () => {
   document.body.classList.add('leaving');
-  setTimeout(() => { location.href = `v5-flight.html?mode=atlas&topic=${state.topic}`; }, RM_MAIN ? 0 : 1100);
+  setTimeout(() => { location.href = `v6-flight.html?mode=atlas&topic=${state.topic}`; }, RM_MAIN ? 0 : 1100);
 });
 addEventListener('pageshow', e => { if (e.persisted) document.body.classList.remove('leaving'); });
 /* flight length: drag the digits up/down, scroll on them, or use the arrow keys (5-minute steps) */
