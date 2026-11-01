@@ -615,8 +615,9 @@ class SceneRenderPass extends TexturePass {
 }
 const composer = new EffectComposer(renderer);
 composer.addPass(new SceneRenderPass());
-/* bloom only catches the Sun and real highlights (threshold above any lit surface) */
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 1.6);
+/* bloom catches engine glows during burns. Its coarse levels turn a tiny, very hot source into a square block, so
+   the Sun (disc + glare together) stays just under this threshold and its glow is the round starburst sprite */
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 3.0);
 const bloomSetSize = bloom.setSize.bind(bloom);
 bloom.setSize = (w, h) => bloomSetSize(Math.max(2, Math.round(w / 2)), Math.max(2, Math.round(h / 2)));
 composer.addPass(bloom);
@@ -790,19 +791,39 @@ const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), new THREE.Sh
     void main(){ float mu = max(dot(normalize(vN), normalize(uCam - vW)), 0.0); gl_FragColor = vec4(vec3(1.0, 0.95, 0.88) * uI * (0.4 + 0.6 * mu), 1.0); }`,
 }));
 farScene.add(sunMesh);
+/* the Sun as a camera in orbit records it (ISS photos): a white core, a soft round halo, and a starburst of thin
+   rays from diffraction at the lens's aperture blades (7 blades -> 14 rays, odd counts double), of uneven length */
 function glareTexture() {
-  const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
-  const g = c.getContext('2d'), img = g.createImageData(S, S);
+  /* half-float, not an 8-bit canvas: the faint outer halo would otherwise step into visible rings */
+  const S = 1024, data = new Uint16Array(S * S * 4), H0 = THREE.DataUtils.toHalfFloat(0), H1 = THREE.DataUtils.toHalfFloat(1);
+  const N = 14, rays = [];
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < N; i++) rays.push({ a: 0.31 + i * Math.PI * 2 / N + (rnd() - 0.5) * 0.04, len: 0.55 + rnd() * 0.45, k: 0.6 + rnd() * 0.4 });
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const r = Math.hypot(x - S / 2 + 0.5, y - S / 2 + 0.5) / (S / 2);
-    const v = r >= 1 ? 0 : (Math.pow(1 + Math.pow(r / 0.035, 2), -1.1) * 0.85 + Math.exp(-r * 6) * 0.15) * Math.pow(1 - r, 2);
-    const i = (y * S + x) * 4; img.data[i] = img.data[i + 1] = img.data[i + 2] = Math.round(255 * Math.min(1, v)); img.data[i + 3] = 255;
+    const dx = x - S / 2 + 0.5, dy = y - S / 2 + 0.5, rp = Math.hypot(dx, dy), r = rp / (S / 2);
+    const i = (y * S + x) * 4;
+    data[i + 3] = H1;
+    if (r >= 1) { data[i] = data[i + 1] = data[i + 2] = H0; continue; }
+    const th = Math.atan2(dy, dx);
+    let v = Math.pow(1 + Math.pow(r / 0.022, 2), -1.15) * 0.55 + Math.exp(-r * 8) * 0.34 + Math.exp(-r * 3) * 0.12;
+    for (const ry of rays) {
+      let d = Math.abs(th - ry.a) % (Math.PI * 2); if (d > Math.PI) d = Math.PI * 2 - d;
+      if (d > 0.2) continue;
+      const w = 1.1 + 2.2 * (1 - r);
+      const across = Math.exp(-Math.pow(d * rp / w, 2));
+      const along = (1 - THREE.MathUtils.smoothstep(r, 0, ry.len)) * Math.min(1, 0.05 / (r + 0.012));
+      v += across * along * ry.k * 0.75;
+    }
+    v *= Math.pow(1 - r, 1.5);
+    data[i] = THREE.DataUtils.toHalfFloat(Math.min(1, v)); data[i + 1] = THREE.DataUtils.toHalfFloat(Math.min(1, v * 0.97)); data[i + 2] = THREE.DataUtils.toHalfFloat(Math.min(1, v * 0.93));
   }
-  g.putImageData(img, 0, 0);
-  const t = new THREE.CanvasTexture(c); return t;
+  const t = new THREE.DataTexture(data, S, S, THREE.RGBAFormat, THREE.HalfFloatType);
+  t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true;
+  return t;
 }
 const sunGlare = new THREE.Sprite(new THREE.SpriteMaterial({ map: glareTexture(), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true }));
-sunGlare.material.color.setRGB(2.2, 1.95, 1.65);
+sunGlare.material.color.setRGB(1.3, 1.25, 1.18);
 sunGlare.renderOrder = 6;
 farScene.add(sunGlare);
 /* the asteroid belt rocks in the map view are the only Standard materials in the far scene */
@@ -815,7 +836,7 @@ const PLANET_VS = `
   varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vObj;
   void main(){ vUv = uv; vObj = normalize(position); vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const PLANET_FS = `
-  uniform sampler2D uMap; uniform vec3 uSun; uniform vec3 uCam; uniform float uLight; uniform float uGain; uniform float uK; uniform float uSoft; uniform vec3 uTint;
+  uniform sampler2D uMap; uniform vec3 uSun; uniform vec3 uCam; uniform float uLight; uniform float uGain; uniform float uK; uniform float uSoft; uniform vec3 uTint; uniform float uFade;
   #ifdef EARTH
   uniform sampler2D uNight; uniform sampler2D uPacked; uniform vec3 uSunObj;
   #endif
@@ -876,13 +897,13 @@ const PLANET_FS = `
       }
     }
   #endif
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(col * uFade, 1.0);
   }`;
 /* Atmosphere: single-scattering Rayleigh + Mie through a shell (10 view x 4 light samples), in planet units */
 const ATMO_VS = `varying vec3 vWorld; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const ATMO_FS = `
   uniform vec3 uCam; uniform vec3 uCenter; uniform float uRp; uniform float uK; uniform vec3 uSunDir;
-  uniform vec3 uBeta; uniform float uMie; uniform float uHR; uniform float uHM; uniform float uG; uniform float uSunI;
+  uniform vec3 uBeta; uniform float uMie; uniform float uHR; uniform float uHM; uniform float uG; uniform float uSunI; uniform float uFade;
   varying vec3 vWorld;
   vec2 rsi(vec3 ro, vec3 rd, float r){ float b = dot(ro, rd); float c = dot(ro, ro) - r * r; float d = b * b - c; if (d < 0.0) return vec2(1e5, -1e5); d = sqrt(d); return vec2(-b - d, -b + d); }
   void main(){
@@ -913,7 +934,7 @@ const ATMO_FS = `
       vec3 att = exp(-(uBeta * (oR + lR) + vec3(uMie * 1.1) * (oM + lM)));
       sR += att * dR; sM += att * dM;
     }
-    gl_FragColor = vec4(uSunI * (pr * uBeta * sR + pm * uMie * sM), 1.0);
+    gl_FragColor = vec4(uSunI * uFade * (pr * uBeta * sR + pm * uMie * sM), 1.0);
   }`;
 const ATMO = {
   earth:   { k: 1.035, beta: [0.42, 1.0, 2.4], mie: 0.2, hr: 0.25, hm: 0.1, g: 0.78, sun: 9 },
@@ -944,7 +965,7 @@ const LIGHT = 1.5;
 function planetMaterial(o) {
   const uniforms = {
     uMap: { value: GREY }, uSun: { value: new THREE.Vector3(1, 0, 0) }, uCam: { value: camera.position }, uLight: { value: LIGHT },
-    uGain: { value: o.gain || 1 }, uK: { value: o.k || 0.8 }, uSoft: { value: o.soft }, uTint: { value: new THREE.Vector3(...(o.tint || [1, 1, 1])) },
+    uGain: { value: o.gain || 1 }, uK: { value: o.k || 0.8 }, uSoft: { value: o.soft }, uTint: { value: new THREE.Vector3(...(o.tint || [1, 1, 1])) }, uFade: { value: 1 },
   };
   const defines = { [o.kind]: '' };
   if (o.kind === 'EARTH') Object.assign(uniforms, { uNight: { value: BLACK }, uPacked: { value: BLACK }, uSunObj: { value: new THREE.Vector3(1, 0, 0) } });
@@ -962,7 +983,7 @@ Object.entries(PLANETS).forEach(([key, o]) => {
   const A = ATMO[key];
   if (A) {
     atmo = {
-      uCam: { value: camera.position }, uCenter: { value: new THREE.Vector3() }, uRp: { value: o.size }, uK: { value: A.k }, uSunDir: mat.uniforms.uSun,
+      uCam: { value: camera.position }, uCenter: { value: new THREE.Vector3() }, uRp: { value: o.size }, uK: { value: A.k }, uSunDir: mat.uniforms.uSun, uFade: mat.uniforms.uFade,
       uBeta: { value: new THREE.Vector3(...A.beta) }, uMie: { value: A.mie }, uHR: { value: A.hr * (A.k - 1) }, uHM: { value: A.hm * (A.k - 1) }, uG: { value: A.g }, uSunI: { value: A.sun },
     };
     tilt.add(new THREE.Mesh(new THREE.SphereGeometry(o.size * A.k, 96, 64), new THREE.ShaderMaterial({
@@ -2135,6 +2156,10 @@ function frame(now) {
   const eg = ATLAS ? e : smooth(e, 0, 0.4);
   /* the flight's own Earth: gone the moment we leave for the map, back as soon as the map's Earth has gone on the way home */
   const flightEarth = stage > (F.view === 'system' ? 0.97 : 0.75);
+  /* on the way home it fades up out of the dark instead of popping in (its size never changes) */
+  const earthFade = flightEarth && F.view !== 'system' ? smooth(stage, 0.75, 0.95) : 1;
+  bodies.earth.uniforms.uFade.value = earthFade;
+  moon.mesh.material.uniforms.uFade.value = earthFade;
 
   /* --- the map (orrery): where everything is, which sets every direction and every phase --- */
   Object.values(bodies).forEach(b => {
@@ -2313,7 +2338,8 @@ function frame(now) {
     sunMesh.scale.setScalar(Dx * Math.tan(THREE.MathUtils.lerp(Math.atan(1.3 / Ds), sunAng(p), stage)));
     sunGlare.position.copy(sunMesh.position);
     /* the camera passes fairly close to the map's Sun on the way out: hold its glare down mid-switch */
-    sunU.uI.value = THREE.MathUtils.lerp(5, 16, stage) * (1 - 0.6 * Math.sin(Math.PI * e));
+    /* steady through the switch, and with the glare's core under bloom's threshold (see the bloom pass) */
+    sunU.uI.value = 1.6;
   }
   skyMesh.position.copy(camera.position);
   if (stars) stars.position.copy(camera.position);
@@ -2452,7 +2478,13 @@ function frame(now) {
   skyU.uVis.value = EXPO.vis;
   flareS += (flare - flareS) * Math.min(1, dt * 5);
   sunGlare.material.opacity = flareS;
-  sunGlare.scale.setScalar(camera.position.distanceTo(sunMesh.position) * Math.tan(THREE.MathUtils.lerp(6, 3, e) * DEG));
+  /* the starburst is the lens's: a fixed size on screen, never smaller than nine times the disc it surrounds
+     (so the big map Sun still glows); it changes only as smoothly as the disc itself does */
+  {
+    const dS = camera.position.distanceTo(sunMesh.position);
+    const discDeg = 2 * Math.atan(sunMesh.scale.x / Math.max(dS, 1e-3)) / DEG;
+    sunGlare.scale.setScalar(dS * Math.tan(Math.max(9, discDeg * 9) * DEG));
+  }
   grade.uniforms.uSun.value.set((sunNdc.x + 1) / 2, (sunNdc.y + 1) / 2, flareS * stage);
 
   composer.render();
@@ -2527,7 +2559,7 @@ function frame(now) {
   }
 }
 
-window.cosmodoro = { AT, focusPlanet, unfocus, F, setView, bodies, grade, bloom, renderer, composer, farScene, nearScene, camera, applySetting, ATMO, EXPO, orientSky, skyU, ready: false, step: () => frame(performance.now()) };
+window.cosmodoro = { AT, ORB, sunGlare, focusPlanet, unfocus, F, setView, bodies, grade, bloom, renderer, composer, farScene, nearScene, camera, applySetting, ATMO, EXPO, orientSky, skyU, ready: false, step: () => frame(performance.now()) };
 applySetting('quality', qKey, false);
 applySetting('grade', settings.grade, false);
 applySetting('sound', settings.sound, false);
