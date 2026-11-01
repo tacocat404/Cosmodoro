@@ -1120,17 +1120,18 @@ const beltMeshes = [['round', 11], ['chunk', 23], ['long', 37]].map(([k, s], i) 
   }
   return m;
 });
-let beltE = -1;
+let beltE = -1, beltS = -1;
 const bm4 = new THREE.Matrix4(), bq = new THREE.Quaternion(), bp = new THREE.Vector3(), bs = new THREE.Vector3();
-function updateBelt(e, time) {
-  beltMeshes.forEach(m => { m.rotation.y = -time * 0.004; m.visible = e > 0.02; });
-  beltPts.visible = e > 0.02;
-  if (Math.abs(e - beltE) < 1e-4) return;
-  beltE = e;
+/* e: where the rocks sit (flight spacing -> map spacing); show: how far they have grown in */
+function updateBelt(e, time, show = e) {
+  beltMeshes.forEach(m => { m.rotation.y = -time * 0.004; m.visible = show > 0.02; });
+  beltPts.visible = show > 0.02;
+  if (Math.abs(e - beltE) + Math.abs(show - beltS) < 1e-4) return;
+  beltE = e; beltS = show;
   beltRocks.forEach(r => {
     const rad = THREE.MathUtils.lerp(28 + r.t * 4, 13.3 + r.t * 2.4, e);
     bp.set(Math.cos(r.a) * rad, r.y * THREE.MathUtils.lerp(0.9, 0.7, e), Math.sin(r.a) * rad);
-    const sz = r.s * THREE.MathUtils.lerp(0.06, 0.16, e);
+    const sz = r.s * THREE.MathUtils.lerp(0.06, 0.16, e) * Math.min(1, show / Math.max(e, 1e-3));
     bs.set(sz * r.sx, sz * r.sy, sz * r.sz);
     bm4.compose(bp, bq.setFromEuler(r.rot), bs);
     r.m.setMatrixAt(r.i, bm4);
@@ -2019,6 +2020,7 @@ const UP = new THREE.Vector3(0, 1, 0), NEG_Z = new THREE.Vector3(0, 0, -1);
 const V = () => new THREE.Vector3();
 const shipPos = V(), tangent = V(), dirSD = V(), endPos = V(), mid = V(), ctrl = V(), tmp = V(), tmp2 = V(), launchPos = V();
 const fwd = V(), right = V(), up = V(), chasePos = V(), chaseLook = V(), backPos = V(), backLook = V(), sysPos = V(), sysLook = V(), lookAt = V(), proj = V();
+const camOff0 = V(), camOff1 = V(), camFocus = V(), camDir = V(), mapDir = V();
 const sunDirShip = V(), sunFlight = V(), earthDir = V(), dirB = V(), moonOff = V(), sunNdc = V(), sunRay = V(), orrDest = V();
 const qShip = new THREE.Quaternion(), qFlip = new THREE.Quaternion(), qInv = new THREE.Quaternion(), qRing = new THREE.Quaternion();
 const accentCol = new THREE.Color(T.accent);
@@ -2081,7 +2083,7 @@ scopeQuad.frustumCulled = false; scopeScene.add(scopeQuad);
 const scopeEl = $('scope'), scopeTxt = $('scopeTxt'), _sv = new THREE.Vector4();
 function drawScope(p, thD, stage) {
   screenDisc(bodies[destKey].tilt.position, PLANETS[destKey].size * bodies[destKey].tilt.scale.x, SD);
-  let target = ATLAS || innerWidth <= 900 || F.arrived ? 0 : stage * (1 - smooth(SD.r, 28, 70)) * smooth(F.clock, T_HOLD + T_SWING, T_HOLD + T_SWING + 6);
+  let target = ATLAS || innerWidth <= 900 || F.arrived ? 0 : smooth(stage, 0.85, 1) * (1 - smooth(SD.r, 28, 70)) * smooth(F.clock, T_HOLD + T_SWING, T_HOLD + T_SWING + 6);
   SCOPE.op += (target - SCOPE.op) * 0.08;
   scopeEl.style.opacity = SCOPE.op; scopeEl.style.setProperty('--scope-op', SCOPE.op);
   if (SCOPE.op < 0.01) return;
@@ -2128,12 +2130,14 @@ function frame(now) {
   F.m += ((F.view === 'system' ? 1 : 0) - F.m) * Math.min(1, dt * (ATLAS ? 0.42 : 1.6));
   const e = F.m * F.m * (3 - 2 * F.m);
   const stage = ATLAS ? 0 : 1 - e;      /* 1: the honest flight camera, 0: the map */
+  /* the orbits settle into their map spacing in the first part of the switch, while the camera is still beside the ship */
+  const eg = ATLAS ? e : smooth(e, 0, 0.4);
 
   /* --- the map (orrery): where everything is, which sets every direction and every phase --- */
   Object.values(bodies).forEach(b => {
     b.ang += b.omega * realDt;
-    b.rd = THREE.MathUtils.lerp(b.o.r, b.o.rc, e);
-    b.s = THREE.MathUtils.lerp(1, b.o.sc, e);
+    b.rd = THREE.MathUtils.lerp(b.o.r, b.o.rc, eg);
+    b.s = THREE.MathUtils.lerp(1, b.o.sc, eg);
     orbitAt(b.ang, b.rd, b.orr);
     b.tilt.position.copy(b.orr);
     b.tilt.scale.setScalar(b.s);
@@ -2198,8 +2202,19 @@ function frame(now) {
   const sysH = THREE.MathUtils.clamp(0.42 + (AT.focus ? 0 : ORB.pitch) * 0.45, 0.04, 1.2);
   sysPos.set(Math.cos(az) * sysDist * 0.9, sysDist * sysH, -Math.sin(az) * sysDist * 0.9);
   sysLook.set(-Math.sin(az) * 6, -sysDist * 0.13, -Math.cos(az) * 6);
-  camera.position.copy(chasePos).lerp(sysPos, e);
-  lookAt.copy(chaseLook).lerp(sysLook, e);
+  /* flight -> map: the ship holds the middle of the frame while the camera pulls straight back from it (distance grows
+     geometrically, so the pull feels even), turns to the map's viewing angle, and only at the end lets the view drift
+     from the ship over to the Sun. Nothing in the frame slides across it on the way. */
+  if (e <= 0) { camera.position.copy(chasePos); lookAt.copy(chaseLook); }
+  else if (e >= 1) { camera.position.copy(sysPos); lookAt.copy(sysLook); }
+  else {
+    camOff0.copy(chasePos).sub(shipPos); const d0 = camOff0.length(); camOff0.divideScalar(d0);
+    camOff1.copy(sysPos).sub(sysLook); const d1 = camOff1.length(); camOff1.divideScalar(d1);
+    camFocus.copy(shipPos).lerp(sysLook, smooth(e, 0.55, 1));
+    camDir.copy(camOff0).lerp(camOff1, smooth(e, 0.05, 0.85)).normalize();
+    camera.position.copy(camFocus).addScaledVector(camDir, d0 * Math.pow(d1 / d0, e));
+    lookAt.copy(chaseLook).sub(chasePos).add(camera.position).lerp(camFocus, smooth(e, 0, 0.3));
+  }
   if (ATLAS) atlasCamera(dt);
   camera.lookAt(lookAt);
   const fovT = THREE.MathUtils.lerp(35, 52, ATLAS ? 1 : e);
@@ -2232,11 +2247,20 @@ function frame(now) {
       dir = earthDir; D = D_EARTH; th = thE;
     }
     if (dir) {
-      tmp.copy(camera.position).addScaledVector(dir, D);
-      b.tilt.position.lerp(tmp, stage);
-      b.tilt.scale.setScalar(THREE.MathUtils.lerp(b.s, D * Math.sin(th) / b.o.size, stage));
+      /* during the switch the world slides along its own line of sight from the camera to its map place,
+         and its angular size eases between the two, so it grows or shrinks where it is instead of flying in */
+      mapDir.copy(b.orr).sub(camera.position); const Dm = mapDir.length(); mapDir.divideScalar(Dm);
+      const thM = Math.asin(Math.min(0.99, b.o.size * b.s / Dm));
+      dir = tmp2.copy(dir).lerp(mapDir, e).normalize();
+      const Dx = THREE.MathUtils.lerp(Dm, D, stage);
+      b.tilt.position.copy(camera.position).addScaledVector(dir, Dx);
+      b.tilt.scale.setScalar(Dx * Math.sin(THREE.MathUtils.lerp(thM, th, stage)) / b.o.size);
       b.mesh.visible = true;
-    } else b.mesh.visible = stage < 0.5;
+    } else {
+      /* the other worlds appear in place on the map by growing out of a point */
+      b.tilt.scale.setScalar(b.s * (1 - smooth(stage, 0.35, 0.75)));
+      b.mesh.visible = stage < 0.75;
+    }
     b.tilt.children.forEach(c => { if (c !== b.mesh) c.visible = b.mesh.visible; });
     if (b.uniforms.uCenter) b.uniforms.uCenter.value.copy(b.tilt.position);
   });
@@ -2263,17 +2287,20 @@ function frame(now) {
     const pb = bodies[mn.parent], c = pb.tilt.position;
     const a = mn.phase + time * mn.speed * 0.5, d = mn.dist * pb.s;
     mn.mesh.position.set(c.x + Math.cos(a) * d, c.y + Math.sin(a * 0.7) * d * 0.08, c.z + Math.sin(a) * d);
-    mn.mesh.scale.setScalar(pb.s);
-    mn.mesh.visible = stage < 0.5 && pb.mesh.visible;
+    mn.mesh.scale.setScalar(pb.s * (1 - smooth(stage, 0.35, 0.75)));
+    mn.mesh.visible = stage < 0.75 && pb.mesh.visible;
     mn.mesh.material.uniforms.uSun.value.copy(pb.uniforms.uSun.value);
   });
   /* the Sun: true-ish angular size in flight, a small bright disc at the centre of the map */
   {
-    tmp.copy(camera.position).addScaledVector(sunDirShip, D_SUN);
-    sunMesh.position.set(0, 0, 0).lerp(tmp, stage);
-    sunMesh.scale.setScalar(THREE.MathUtils.lerp(1.3, D_SUN * Math.tan(sunAng(p)), stage));
+    mapDir.copy(camera.position).negate(); const Ds = Math.max(1e-3, mapDir.length()); mapDir.divideScalar(Ds);
+    tmp.copy(sunFlight).lerp(mapDir, e).normalize();
+    const Dx = THREE.MathUtils.lerp(Ds, D_SUN, stage);
+    sunMesh.position.copy(camera.position).addScaledVector(tmp, Dx);
+    sunMesh.scale.setScalar(Dx * Math.tan(THREE.MathUtils.lerp(Math.atan(1.3 / Ds), sunAng(p), stage)));
     sunGlare.position.copy(sunMesh.position);
-    sunU.uI.value = THREE.MathUtils.lerp(5, 16, stage);
+    /* the camera passes fairly close to the map's Sun on the way out: hold its glare down mid-switch */
+    sunU.uI.value = THREE.MathUtils.lerp(5, 16, stage) * (1 - 0.6 * Math.sin(Math.PI * e));
   }
   skyMesh.position.copy(camera.position);
   if (stars) stars.position.copy(camera.position);
@@ -2308,7 +2335,7 @@ function frame(now) {
   const shipScale = THREE.MathUtils.lerp(SHIP_S, SHIP_S * 6 * sysK, e);
   shipRoot.scale.setScalar(shipScale);
   shipMarker.position.copy(shipPos);
-  shipMarker.scale.setScalar(THREE.MathUtils.lerp(0.0001, 1.1 * sysK, e));
+  shipMarker.scale.setScalar(THREE.MathUtils.lerp(0.0001, 1.1 * sysK, smooth(e, 0.5, 1)));
   /* steady engines: bright during the departure and braking burns, a faint ion glow while coasting */
   shipModel.userData.engines.forEach(en => {
     const pl = en.userData.plume, s = 0.05 + F.burn * 0.95;
@@ -2348,15 +2375,17 @@ function frame(now) {
 
   /* --- map-only layers --- */
   orbitObjs.forEach(o => {
-    const s = THREE.MathUtils.lerp(1, o.rc / o.r, e);
+    const s = THREE.MathUtils.lerp(1, o.rc / o.r, eg);
     o.line.scale.set(s, 1, s);
     o.line.material.opacity = 0.22 * e * (1 - AT.ef); o.line.visible = e > 0.01 && AT.ef < 0.99;
   });
-  beltPts.scale.setScalar(THREE.MathUtils.lerp(1, 14.5 / 30, e));
-  beltMat.uniforms.uBase.value = sysK * 0.8 * e; beltMat.uniforms.uFade.value = 0.45 * e;
-  updateBelt(e, time);
+  /* the map's overlays (belt, flight path) come in once the camera is clear of the ship, so nothing big sweeps past the lens */
+  const eo = ATLAS ? e : smooth(e, 0.3, 1);
+  beltPts.scale.setScalar(THREE.MathUtils.lerp(1, 14.5 / 30, eg));
+  beltMat.uniforms.uBase.value = sysK * 0.8 * eo; beltMat.uniforms.uFade.value = 0.45 * eo;
+  updateBelt(eg, time, eo);
   if (ATLAS) { beltMeshes.forEach(m => { m.visible = m.visible && AT.ef < 0.35; }); beltPts.visible = beltPts.visible && AT.ef < 0.35; }
-  traj.visible = !ATLAS && e > 0.01;
+  traj.visible = !ATLAS && eo > 0.01;
   if (traj.visible) {
     for (let i = 0; i < TN; i++) {
       const u = i / (TN - 1);
@@ -2368,7 +2397,7 @@ function frame(now) {
       if (done) tGeo.attributes.aColor.setXYZ(i, accentCol.r * 1.6, accentCol.g * 1.6, accentCol.b * 1.6); else tGeo.attributes.aColor.setXYZ(i, .9, .92, 1);
     }
     tGeo.attributes.position.needsUpdate = tGeo.attributes.aSize.needsUpdate = tGeo.attributes.aAlpha.needsUpdate = tGeo.attributes.aColor.needsUpdate = true;
-    tMat.uniforms.uBase.value = sysK; tMat.uniforms.uFade.value = e;
+    tMat.uniforms.uBase.value = sysK * eo; tMat.uniforms.uFade.value = eo;
   }
 
   /* --- exposure: how much sunlit surface fills the frame decides how many stars a real camera would keep --- */
