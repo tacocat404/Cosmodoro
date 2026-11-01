@@ -1,5 +1,5 @@
 # Publish design/drafts to GitHub Pages (the gh-pages branch) on every push that touches the drafts,
-# so https://tacocat404.github.io/cosmodoro/ always shows the latest pushed version.
+# so https://tacocat404.github.io/Cosmodoro/ always shows the latest pushed version.
 name: Drafts to GitHub Pages
 
 on:
