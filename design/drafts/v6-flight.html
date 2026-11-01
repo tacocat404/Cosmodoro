@@ -2249,7 +2249,9 @@ function frame(now) {
     }
     let dir = null, D = 0, th = 0;
     if (k === destKey) { dir = fwd; D = D_DEST; th = thD; }
-    else if (k === 'earth') {
+    else if (k === 'earth' && stage > 0.97) {
+      /* the flight's Earth belongs to the flight only: once the switch starts it leaves, and the map's Earth
+         grows in at its orbit like every other world (no shrinking Earth across the move) */
       /* Earth on its real bearing from here (about 155-160 deg off the bow), the same place the map has it */
       earthDir.copy(b.orr).sub(camera.position).normalize();
       dir = earthDir; D = D_EARTH; th = thE;
@@ -2286,8 +2288,8 @@ function frame(now) {
     tmp.set(eb.orr.x + Math.cos(ma) * moon.dist * eb.s, eb.orr.y, eb.orr.z + Math.sin(ma) * moon.dist * eb.s);
     moonOff.copy(fwd).negate().multiplyScalar(0.6).addScaledVector(right, -0.45).addScaledVector(up, 0.35).normalize();
     tmp2.copy(eb.tilt.position).addScaledVector(moonOff, 60.3 * Re);
-    moon.mesh.position.copy(tmp).lerp(tmp2, stage);
-    moon.mesh.scale.setScalar(THREE.MathUtils.lerp(moon.size * eb.s, 0.2727 * Re, stage));
+    moon.mesh.position.copy(stage > 0.97 ? tmp2 : tmp);
+    moon.mesh.scale.setScalar(stage > 0.97 ? 0.2727 * Re : moon.size * eb.s * (1 - smooth(stage, 0.35, 0.75)));
     moon.mesh.material.uniforms.uSun.value.copy(eb.uniforms.uSun.value);
     moon.mesh.visible = eb.mesh.visible;
   }
