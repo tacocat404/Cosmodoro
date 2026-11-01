@@ -13,11 +13,13 @@
 | `mars_4k.jpg` | Solar System Scope `8k_mars.jpg` (fury-gl/fury-data 사본) | CC BY 4.0 | 8192×4096을 4096×2048로 줄이고 JPEG 품질 88로 다시 저장 |
 | `jupiter_4k.jpg` | Solar System Scope `8k_jupiter.jpg`(실제 4096×2048) | CC BY 4.0 | 없음 |
 | `saturn_4k.jpg` | Solar System Scope `8k_saturn.jpg`(실제 4096×2048) | CC BY 4.0 | 없음 |
-| `saturn_ring_8k.png` | Solar System Scope `8k_saturn_ring_alpha.png` | CC BY 4.0 | 없음. 셰이더에서 안쪽 끝을 토성 반지름의 1.137배, 바깥 끝을 2.391배로 맞췄어요(카시니 간극 1.95~2.03배 기준) |
+| `saturn_ring_8k_strip.png`, `saturn_ring_1k.png` | Solar System Scope `8k_saturn_ring_alpha.png` | CC BY 4.0 | 고리는 반지름 방향으로만 변해서 8192×500 원본의 가운데 줄들을 평균해 8192×4로 줄였어요(1k는 1024×62). 셰이더에서 안쪽 끝을 토성 반지름의 1.137배, 바깥 끝을 2.391배로 맞췄어요(카시니 간극 1.95~2.03배 기준) |
 | `milkyway_gaia_4k.jpg` | Milky Way render by Kevinmloch (bsrender) from Gaia EDR3, ESA/Gaia/DPAC. 지구에서 3kpc 안쪽 별을 지운 은하수. npm `astraeus-data@0.3.0` 사본(Wikimedia Commons가 3840×1920으로 줄인 것) | CC BY-SA 4.0 | 없음. 화면에서 어둡게·저채도로 그릴 뿐 파일은 그대로예요 |
 | `stars_mag75.json` | d3-celestial `data/stars.8.json` © Olaf Frohn (XHIP: Anderson & Francis 2012 기반) | BSD-3-Clause | 7.5등급 이하 25,723개만 골라 별마다 적경·적위·등급·B−V를 16비트 정수 4개로 묶어 base64로 담았어요 |
 
-`*_1k.jpg`(그리고 `earth_night_2k.jpg`)는 위 파일을 1024×512(2048×1024)로 줄인 사본이에요. 태양계 지도처럼 행성이 작게 보일 때만 써요.
+`*_1k.jpg`(그리고 `earth_night_2k.jpg`)는 위 파일을 1024×512(2048×1024)로 줄인 사본이에요. 태양계 지도처럼 행성이 작게 보일 때와 메인 페이지에서 써요. `moon_1k.jpg`는 `moon_2k.jpg`를 줄였어요.
+
+`ktx2/*.ktx2`는 위 .jpg를 Basis Universal ETC1S로 다시 압축한 사본이에요(밉맵 포함, 위아래 뒤집음). 내용은 같아요.
 
 ## 한 줄 표기
 

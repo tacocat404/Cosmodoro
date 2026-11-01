@@ -856,8 +856,9 @@ float ringPattern(float r, out float bands){
   return (0.25 + 0.6 * bands) * fine * (1.0 - gap * 0.92) * smoothstep(0.0, 0.05, r) * (1.0 - smoothstep(0.93, 1.0, r));
 }
 `;
-const RING_IN = 1.3;
-const RING_OUT = 2.3;
+/* the ring map's real span (assets/CREDITS.md): 1.137 to 2.391 Saturn radii */
+const RING_IN = 1.137;
+const RING_OUT = 2.391;
 
 const LOOK = {
   mercury: { type: 0, seed: 4.4, a: '#2e2b29', b: '#6f6a64', c: '#aaa39b', cap: 0, band: 20, spot: 0, bump: 0.4 },
@@ -885,6 +886,7 @@ function lookUniforms(three, key, target = {}) {
   });
   set('uType', l.type); set('uSeed', l.seed); set('uCap', l.cap); set('uBandF', l.band); set('uSpot', l.spot);
   if (!target.uTime) target.uTime = { value: 0 };
+  if (typeof applyMap === 'function') applyMap(target, key);
   return target;
 }
 /* ---- end shared planet look ---- */
@@ -1100,24 +1102,78 @@ const PRINT_GLSL = `
   }
 `;
 
+/* real surface maps (assets/CREDITS.md), the same ones the flight uses, in small 1k copies.
+   lo/hi: the map's 2nd and 98th percentile of sqrt luminance (area weighted), stretched onto the
+   print's tone range; near-featureless worlds keep at least 0.3 of it so they don't turn to noise.
+   Bodies without a map (ceres, io, ice, moonB) keep the procedural surface. */
+const MAPS = {
+  mercury: { f: 'mercury_1k.jpg', lo: 0.331, hi: 0.638, bump: 0.5 },
+  venus:   { f: 'venus_clouds_1k.jpg', lo: 0.598, hi: 0.849, bump: 0 },
+  earth:   { f: 'earth_day_1k.jpg', clouds: 'earth_bump_rough_clouds_1k.jpg', lo: 0.063, hi: 0.949, bump: 0.2 },
+  mars:    { f: 'mars_1k.jpg', lo: 0.208, hi: 0.606, bump: 0.5 },
+  jupiter: { f: 'jupiter_1k.jpg', lo: 0.452, hi: 0.851, bump: 0 },
+  saturn:  { f: 'saturn_1k.jpg', lo: 0.593, hi: 0.933, bump: 0 },
+  uranus:  { f: 'uranus_1k.jpg', lo: 0.608, hi: 0.844, bump: 0 },
+  neptune: { f: 'neptune_1k.jpg', lo: 0.216, hi: 0.468, bump: 0 },
+  moon:    { f: 'moon_1k.jpg', lo: 0.258, hi: 0.736, bump: 0.5 },
+};
+const texLoader = new THREE.TextureLoader();
+const mapTex = {};
+function loadTex(file, then) {
+  if (mapTex[file]) { if (mapTex[file].ready) then(mapTex[file].tex); else mapTex[file].wait.push(then); return; }
+  const m = mapTex[file] = { ready: false, wait: [then], tex: null };
+  m.tex = texLoader.load('assets/' + file, t => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    m.ready = true; m.wait.forEach(f => f(t)); m.wait = []; needsDraw = true;
+  }, undefined, () => { m.wait = []; });
+}
+/* point a material at its body's map; until the map arrives (or if it never does) it stays procedural */
+function applyMap(u, key) {
+  const m = MAPS[key];
+  ['uMap', 'uClouds'].forEach(n => { if (!u[n]) u[n] = { value: null }; });
+  ['uHasMap', 'uHasClouds', 'uLo', 'uHi', 'uMapBump'].forEach(n => { if (!u[n]) u[n] = { value: 0 }; });
+  u.uHasMap.value = 0; u.uHasClouds.value = 0;
+  u._key = key;
+  if (!m) return;
+  const span = Math.max(0.3, m.hi - m.lo), mid = (m.lo + m.hi) / 2;
+  u.uLo.value = mid - span / 2; u.uHi.value = mid + span / 2; u.uMapBump.value = m.bump;
+  const need = m.clouds ? 2 : 1;
+  let got = 0;
+  const done = () => { if (++got === need && u._key === key) { u.uHasMap.value = 1; u.uHasClouds.value = m.clouds ? 1 : 0; needsDraw = true; } };
+  loadTex(m.f, t => { if (u._key === key) u.uMap.value = t; done(); });
+  if (m.clouds) loadTex(m.clouds, t => { if (u._key === key) u.uClouds.value = t; done(); });
+}
+/* fetch every map up front: ~0.8MB, so the ticket and planet switches never wait */
+Object.keys(MAPS).forEach(k => { loadTex(MAPS[k].f, () => {}); if (MAPS[k].clouds) loadTex(MAPS[k].clouds, () => {}); });
+
 const monoMat = key => new THREE.ShaderMaterial({
   uniforms: lookUniforms(THREE, key, { uLight: { value: LIGHT }, uTint: { value: new THREE.Color(1, 1, 1) }, uTintAmt: { value: 0 }, uBump: { value: 0 }, uPrint: PRINT, uDim: DIM }),
   vertexShader: `
-    varying vec3 vObj; varying vec3 vN; varying vec3 vView;
-    void main(){ vObj = normalize(position); vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vView = mv.xyz; gl_Position = projectionMatrix * mv; }`,
+    varying vec3 vObj; varying vec3 vN; varying vec3 vView; varying vec2 vUv;
+    void main(){ vUv = uv; vObj = normalize(position); vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vView = mv.xyz; gl_Position = projectionMatrix * mv; }`,
   fragmentShader: `
     uniform vec3 uLight; uniform vec3 uTint; uniform float uTintAmt; uniform float uBump;
-    varying vec3 vObj; varying vec3 vN; varying vec3 vView;
+    uniform sampler2D uMap; uniform sampler2D uClouds; uniform float uHasMap; uniform float uHasClouds;
+    uniform float uLo; uniform float uHi; uniform float uMapBump;
+    varying vec3 vObj; varying vec3 vN; varying vec3 vView; varying vec2 vUv;
     ${NOISE}
     ${SURFACE}
     ${PRINT_GLSL}
     void main(){
-      float h, ocean, city;
-      vec3 col = surface(vObj, h, ocean, city);
+      float h, ocean, city, alb;
       vec3 W = vec3(0.2126, 0.7152, 0.0722);
-      float lo = sqrt(min(min(dot(uA, W), dot(uB, W)), dot(uC, W)));
-      float hi = sqrt(max(max(dot(uA, W), dot(uB, W)), dot(uC, W)));
-      float alb = mix(0.28, 0.96, clamp((sqrt(dot(col, W)) - lo) / max(0.001, hi - lo), 0.0, 1.0));
+      if (uHasMap > 0.5) {
+        /* the real map, read as brightness only: the print keeps its own ink */
+        float L = sqrt(dot(texture2D(uMap, vUv).rgb, W));
+        if (uHasClouds > 0.5) L = mix(L, 0.97, texture2D(uClouds, vUv).b * 0.85);
+        h = L * uMapBump;
+        alb = mix(0.28, 0.96, clamp((L - uLo) / max(0.001, uHi - uLo), 0.0, 1.0));
+      } else {
+        vec3 col = surface(vObj, h, ocean, city);
+        float lo = sqrt(min(min(dot(uA, W), dot(uB, W)), dot(uC, W)));
+        float hi = sqrt(max(max(dot(uA, W), dot(uB, W)), dot(uC, W)));
+        alb = mix(0.28, 0.96, clamp((sqrt(dot(col, W)) - lo) / max(0.001, hi - lo), 0.0, 1.0));
+      }
       vec3 N = normalize(vN);
       vec3 dpx = dFdx(vView), dpy = dFdy(vView);
       float dhx = dFdx(h), dhy = dFdy(h);
@@ -1147,17 +1203,23 @@ tilt.add(planet);
 scene.add(tilt);
 
 const ringMat = new THREE.ShaderMaterial({
-  uniforms: { uIn: { value: RING_IN }, uOut: { value: RING_OUT }, uTime: { value: 0 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPrint: PRINT, uDim: DIM, uFade: RING_FADE },
+  uniforms: { uIn: { value: RING_IN }, uOut: { value: RING_OUT }, uTime: { value: 0 }, uRingMap: { value: null }, uHasRing: { value: 0 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPrint: PRINT, uDim: DIM, uFade: RING_FADE },
   vertexShader: `varying vec3 vL; void main(){ vL = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `
     uniform float uIn; uniform float uOut; uniform float uTime; uniform vec3 uTint; uniform float uFade; varying vec3 vL;
+    uniform sampler2D uRingMap; uniform float uHasRing;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     ${RING}
     ${PRINT_GLSL}
     void main(){
       float r = (length(vL.xy) - uIn) / (uOut - uIn);
       float bands;
-      float a = ringPattern(r, bands) * 1.15 * uFade;
+      float a;
+      if (uHasRing > 0.5) {
+        vec4 m = texture2D(uRingMap, vec2(r, 0.5));
+        bands = clamp(sqrt(dot(m.rgb, vec3(0.2126, 0.7152, 0.0722))) * 1.15, 0.0, 1.0);
+        a = m.a * uFade;
+      } else a = ringPattern(r, bands) * 1.15 * uFade;
       float v = printTone(0.82 * bands * uDim + (hash(gl_FragCoord.xy + floor(uTime * 12.0) * 13.0) - 0.5) * 0.18 * (1.0 - uPrint * 0.6));
       vec3 c = mix(vec3(v), v * uTint * 1.1, 0.5);
       gl_FragColor = vec4(c * a, a);
@@ -1168,6 +1230,10 @@ const ring = new THREE.Mesh(new THREE.RingGeometry(RING_IN, RING_OUT, 200, 1), r
 ring.rotation.x = -Math.PI / 2;
 ring.renderOrder = 2;
 tilt.add(ring);
+loadTex('saturn_ring_1k.png', t => {
+  ringMat.uniforms.uRingMap.value = t; ringMat.uniforms.uHasRing.value = 1;
+  if (shot.ringMat) { shot.ringMat.uniforms.uRingMap.value = t; shot.ringMat.uniforms.uHasRing.value = 1; }
+});
 
 /* Other worlds behind the destination, arranged differently for each one: [look, u, v, size × r, spin rad/s].
    u/v place them inside the open sky between the lettering and the planet (and Saturn's ring). */

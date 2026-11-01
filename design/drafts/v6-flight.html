@@ -426,6 +426,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { TexturePass } from 'three/addons/postprocessing/TexturePass.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 
 /* v6: one honest camera. The scene keeps only what a documentary camera on a chase craft could record:
    one hard Sun, real planet maps, the real sky, exposure that hides stars next to sunlit worlds,
@@ -596,12 +597,25 @@ composer.addPass(grade);
 const texLoader = new THREE.TextureLoader();
 const GREY = new THREE.DataTexture(new Uint8Array([90, 90, 90, 255]), 1, 1); GREY.colorSpace = THREE.SRGBColorSpace; GREY.needsUpdate = true;
 const BLACK = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); BLACK.needsUpdate = true;
-function loadTex(file, color = true) {
-  return new Promise(res => texLoader.load(`assets/${file}`, t => {
-    t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-    t.anisotropy = ANISO;
-    res(t);
-  }, undefined, () => { console.warn('texture failed', file); res(null); }));
+/* every .jpg map also comes as a GPU-compressed copy in assets/ktx2 (Basis ETC1S, flipped at encode time):
+   about the same download, but it stays compressed on the GPU (a 4k map takes ~8 MB instead of ~45 MB)
+   and is unpacked in a worker, so loading a close-up doesn't stall the frame. If the transcoder can't
+   start here (blocked CDN, no workers or wasm), a 3 KB probe fails within a few seconds and every map
+   falls back to its .jpg. */
+const ktx2 = new KTX2Loader().setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/libs/basis/').detectSupport(renderer);
+const ktxOk = Promise.race([
+  ktx2.loadAsync('assets/ktx2/uranus_1k.ktx2').then(t => { t.dispose(); return true; }, () => false),
+  new Promise(r => setTimeout(() => r(false), 6000)),
+]).then(ok => { if (!ok) console.warn('KTX2 unavailable, using .jpg maps'); return ok; });
+const loadJpg = file => new Promise(res => texLoader.load(`assets/${file}`, res, undefined, () => res(null)));
+const loadKtx = file => ktx2.loadAsync(`assets/ktx2/${file.replace(/\.jpg$/, '.ktx2')}`).catch(() => null);
+async function loadTex(file, color = true) {
+  let t = /\.jpg$/.test(file) && await ktxOk ? await loadKtx(file) : null;
+  if (!t) t = await loadJpg(file);
+  if (!t) { console.warn('texture failed', file); return null; }
+  t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  t.anisotropy = ANISO;
+  return t;
 }
 
 /* =========================================================
@@ -974,7 +988,7 @@ async function loadPlanet(key, hi = false) {
     jobs.push(loadTex(hi ? 'earth_night_2k.jpg' : 'earth_night_1k.jpg').then(t => set('uNight', t)));
     jobs.push(loadTex(hi ? 'earth_bump_rough_clouds_4k.jpg' : 'earth_bump_rough_clouds_1k.jpg', false).then(t => set('uPacked', t)));
   }
-  if (o.ring && !b.ringLoaded) { b.ringLoaded = true; jobs.push(loadTex('saturn_ring_8k.png').then(t => { if (t) U.uRing.value = t; })); }
+  if (o.ring && !b.ringLoaded) { b.ringLoaded = true; jobs.push(loadTex('saturn_ring_8k_strip.png').then(t => { if (t) U.uRing.value = t; })); }
   await Promise.all(jobs);
 }
 
