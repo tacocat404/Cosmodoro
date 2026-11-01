@@ -2204,18 +2204,24 @@ function frame(now) {
   const sysH = THREE.MathUtils.clamp(0.42 + (AT.focus ? 0 : ORB.pitch) * 0.45, 0.04, 1.2);
   sysPos.set(Math.cos(az) * sysDist * 0.9, sysDist * sysH, -Math.sin(az) * sysDist * 0.9);
   sysLook.set(-Math.sin(az) * 6, -sysDist * 0.13, -Math.cos(az) * 6);
-  /* flight -> map: the ship holds the middle of the frame while the camera pulls straight back from it (distance grows
-     geometrically, so the pull feels even), turns to the map's viewing angle, and only at the end lets the view drift
-     from the ship over to the Sun. Nothing in the frame slides across it on the way. */
+  /* flight -> map, in two plain moves so the frame never twists:
+     1) a crane shot: the camera rises and backs away from the ship along its own bearing (no turning), the ship
+        held in the middle, until the whole system is in view;
+     2) one slow arc round to the map's viewing angle while the aim drifts from the ship to the Sun.
+     Every world sits on its real line of sight throughout, so nothing flies across the frame. */
   if (e <= 0) { camera.position.copy(chasePos); lookAt.copy(chaseLook); }
   else if (e >= 1) { camera.position.copy(sysPos); lookAt.copy(sysLook); }
   else {
+    const t1 = smooth(e, 0, 0.55), t2 = smooth(e, 0.45, 1);
     camOff0.copy(chasePos).sub(shipPos); const d0 = camOff0.length(); camOff0.divideScalar(d0);
     camOff1.copy(sysPos).sub(sysLook); const d1 = camOff1.length(); camOff1.divideScalar(d1);
-    camFocus.copy(shipPos).lerp(sysLook, smooth(e, 0.55, 1));
-    camDir.copy(camOff0).lerp(camOff1, smooth(e, 0.05, 0.85)).normalize();
-    camera.position.copy(camFocus).addScaledVector(camDir, d0 * Math.pow(d1 / d0, e));
-    lookAt.copy(chaseLook).sub(chasePos).add(camera.position).lerp(camFocus, smooth(e, 0, 0.3));
+    /* the crane: same heading, lifted to the map's height */
+    camDir.copy(camOff0).setY(0).normalize().multiplyScalar(Math.sqrt(Math.max(0, 1 - camOff1.y * camOff1.y))).setY(camOff1.y);
+    camDir.lerp(camOff0, 1 - t1).normalize();
+    camDir.lerp(camOff1, t2).normalize();
+    camFocus.copy(shipPos).lerp(sysLook, t2);
+    camera.position.copy(camFocus).addScaledVector(camDir, d0 * Math.pow(d1 / d0, t1));
+    lookAt.copy(chaseLook).sub(chasePos).add(camera.position).lerp(camFocus, smooth(e, 0, 0.25));
   }
   if (ATLAS) atlasCamera(dt);
   camera.lookAt(lookAt);
@@ -2253,7 +2259,7 @@ function frame(now) {
          and its angular size eases between the two, so it grows or shrinks where it is instead of flying in */
       mapDir.copy(b.orr).sub(camera.position); const Dm = mapDir.length(); mapDir.divideScalar(Dm);
       const thM = Math.asin(Math.min(0.99, b.o.size * b.s / Dm));
-      dir = tmp2.copy(dir).lerp(mapDir, e).normalize();
+      dir = mapDir;
       const Dx = THREE.MathUtils.lerp(Dm, D, stage);
       b.tilt.position.copy(camera.position).addScaledVector(dir, Dx);
       b.tilt.scale.setScalar(Dx * Math.sin(THREE.MathUtils.lerp(thM, th, stage)) / b.o.size);
@@ -2296,7 +2302,7 @@ function frame(now) {
   /* the Sun: true-ish angular size in flight, a small bright disc at the centre of the map */
   {
     mapDir.copy(camera.position).negate(); const Ds = Math.max(1e-3, mapDir.length()); mapDir.divideScalar(Ds);
-    tmp.copy(sunFlight).lerp(mapDir, e).normalize();
+    tmp.copy(mapDir);
     const Dx = THREE.MathUtils.lerp(Ds, D_SUN, stage);
     sunMesh.position.copy(camera.position).addScaledVector(tmp, Dx);
     sunMesh.scale.setScalar(Dx * Math.tan(THREE.MathUtils.lerp(Math.atan(1.3 / Ds), sunAng(p), stage)));
