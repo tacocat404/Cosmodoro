@@ -2157,11 +2157,10 @@ function frame(now) {
   fwd.copy(orrDest).sub(shipPos).normalize();
   right.crossVectors(fwd, UP).normalize();
   up.crossVectors(right, fwd).normalize();
-  /* in flight the Sun keeps the geometry of a real transfer: about square to the line of sight, a little above,
-     so the ship is side-lit and the destination shows a terminator; every body in the frame shares this one Sun */
-  const sa = THREE.MathUtils.lerp(97, 92, p) * DEG;
-  sunFlight.copy(fwd).multiplyScalar(Math.cos(sa)).addScaledVector(right, Math.sin(sa)).addScaledVector(up, 0.22).normalize();
-  sunDirShip.copy(shipPos).negate().normalize().lerp(sunFlight, stage).normalize();
+  /* the Sun is where the map puts it: from the ship it swings from about 67 deg off the bow at departure to about
+     116 deg at arrival, so the flight view and the map always agree on where it is; every body shares this one Sun */
+  sunFlight.copy(shipPos).negate().normalize();
+  sunDirShip.copy(sunFlight);
 
   /* --- cameras --- */
   const sw = RM ? 0 : 1;
@@ -2169,17 +2168,20 @@ function frame(now) {
   const yawN = (0.0045 * Math.sin(time * 0.1337) + 0.003 * Math.sin(time * 0.0861 + 1.3) + 0.002 * Math.sin(time * 0.0479 + 2.1)) * sw;
   const pitN = (0.003 * Math.sin(time * 0.1063 + 0.7) + 0.002 * Math.sin(time * 0.0647 + 2.9)) * sw;
   const Dc = 0.72;
-  chasePos.copy(shipPos).addScaledVector(fwd, -0.95 * Dc).addScaledVector(right, 0.27 * Dc).addScaledVector(up, 0.093 * Dc);
-  tmp.copy(fwd).applyAxisAngle(up, 8.5 * DEG + yawN).applyAxisAngle(right, -4.9 * DEG + pitN);
+  /* the chase craft flies on the Sun's side of the ship, so we always see its lit flank (the Sun's side of the
+     path never changes during a flight) */
+  const side = sunFlight.dot(right) >= 0 ? 1 : -1;
+  chasePos.copy(shipPos).addScaledVector(fwd, -0.95 * Dc).addScaledVector(right, 0.27 * Dc * side).addScaledVector(up, 0.093 * Dc);
+  tmp.copy(fwd).applyAxisAngle(up, 8.5 * DEG * side + yawN).applyAxisAngle(right, -4.9 * DEG + pitN);
   chaseLook.copy(chasePos).add(tmp);
   /* departure: hold a look back at Earth behind the ship, then one slow swing around to the chase */
   const swing = smooth(F.clock, T_HOLD, T_HOLD + T_SWING);
   if (swing < 1 && !ATLAS) {
     /* the opening shot from ahead of the ship on its sunlit side: the ship over Earth's night side */
-    backLook.copy(fwd).negate().applyAxisAngle(up, -9 * DEG).applyAxisAngle(right, 2 * DEG);
+    backLook.copy(fwd).negate().applyAxisAngle(up, -9 * DEG * side).applyAxisAngle(right, 2 * DEG);
     /* then one slow orbit around the lit side of the ship to the chase position */
     const ph = Math.PI * swing, sp = Math.sin(ph);
-    backPos.copy(shipPos).addScaledVector(fwd, Math.cos(ph) * 1.1 * Dc).addScaledVector(right, (0.36 + sp * 0.9) * Dc).addScaledVector(up, (0.14 + sp * 0.25) * Dc);
+    backPos.copy(shipPos).addScaledVector(fwd, Math.cos(ph) * 1.1 * Dc).addScaledVector(right, (0.36 + sp * 0.9) * Dc * side).addScaledVector(up, (0.14 + sp * 0.25) * Dc);
     tmp.copy(chaseLook).sub(chasePos).normalize();
     tmp2.copy(shipPos).addScaledVector(fwd, 0.3 * Dc).sub(backPos).normalize();
     tmp.lerp(backLook, 1 - swing).normalize().lerp(tmp2, 0.7 * sp).normalize();
@@ -2242,8 +2244,8 @@ function frame(now) {
     let dir = null, D = 0, th = 0;
     if (k === destKey) { dir = fwd; D = D_DEST; th = thD; }
     else if (k === 'earth') {
-      /* Earth sits a little off the line behind us, so the look-back shot holds both ship and planet */
-      earthDir.copy(fwd).negate().applyAxisAngle(up, -10 * DEG).applyAxisAngle(right, -3 * DEG);
+      /* Earth on its real bearing from here (about 155-160 deg off the bow), the same place the map has it */
+      earthDir.copy(b.orr).sub(camera.position).normalize();
       dir = earthDir; D = D_EARTH; th = thE;
     }
     if (dir) {
