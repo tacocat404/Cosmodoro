@@ -364,7 +364,7 @@
         <div class="track"><span class="tick" style="left:25%"></span><span class="tick" style="left:50%"></span><span class="tick" style="left:75%"></span><div class="done" id="done"></div><div class="tail-glow"></div><div class="tail"></div><div class="dot" id="dot"></div></div>
       </div>
       <div class="ctrls t2">
-        <a class="ctrl" href="v5-main.html" aria-label="귀환"><iconify-icon icon="solar:home-angle-linear" width="18"></iconify-icon></a>
+        <a class="ctrl" href="v6-main.html" aria-label="귀환"><iconify-icon icon="solar:home-angle-linear" width="18"></iconify-icon></a>
         <button class="ctrl main" id="pauseBtn" aria-label="일시정지"><iconify-icon icon="solar:pause-bold" width="22"></iconify-icon></button>
         <button class="ctrl" id="arriveBtn" aria-label="바로 도착"><iconify-icon icon="solar:skip-next-linear" width="18"></iconify-icon></button>
       </div>
@@ -404,8 +404,8 @@
       <label class="check"><input type="checkbox" id="arrDone">미션 완료로 기록</label>
       <div class="rate"><small>이번 비행은 어땠나요?</small><div><button data-r="3">몰입했어요</button><button data-r="2">보통이었어요</button><button data-r="1">자주 끊겼어요</button></div></div>
       <div class="arr-actions">
-        <a class="btn primary" href="v5-main.html?rest=5"><iconify-icon icon="solar:cup-hot-linear" width="16"></iconify-icon>정거장에서 5분 쉬기</a>
-        <a class="btn ghost" href="v5-main.html">메인으로</a>
+        <a class="btn primary" href="v6-main.html?rest=5"><iconify-icon icon="solar:cup-hot-linear" width="16"></iconify-icon>정거장에서 5분 쉬기</a>
+        <a class="btn ghost" href="v6-main.html">메인으로</a>
       </div>
     </div>
   </div>
@@ -1588,7 +1588,7 @@ if (ATLAS) {
     if (id === 'pdGo') {
       const cat = CATS.find(c => c.planet === AT.focus);
       document.body.classList.add('leaving');
-      setTimeout(() => { location.href = `v5-main.html?topic=${encodeURIComponent(cat.key)}`; }, 650);
+      setTimeout(() => { location.href = `v6-main.html?topic=${encodeURIComponent(cat.key)}`; }, 650);
     }
   });
   $('pdCat').addEventListener('keydown', e => { if (e.target.id === 'pdInput' && e.key === 'Enter') { e.preventDefault(); commitName(); } });
@@ -1607,7 +1607,7 @@ if (ATLAS) {
   [shipRoot, shipMarker, traj].forEach(o => { o.visible = false; });
   const back = () => {
     if (AT.focus) { unfocus(); return; }
-    document.body.classList.add('leaving'); setTimeout(() => { location.href = 'v5-main.html'; }, 650);
+    document.body.classList.add('leaving'); setTimeout(() => { location.href = 'v6-main.html'; }, 650);
   };
   $('atlasBack').addEventListener('click', back);
   addEventListener('keydown', e => {

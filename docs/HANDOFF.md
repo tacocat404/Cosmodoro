@@ -7,7 +7,7 @@
 - **단계:** 디자인 초안 단계예요. 실제 개발(`apps/`, `server/`)은 아직 시작하지 않았어요.
 - **사용자 결정:** 로그인·캘린더를 초안에 넣고 디자인을 다듬은 뒤 개발로 넘어가요. 계획은 [PLAN.md](PLAN.md)에 있어요.
 - **레포:** https://github.com/tacocat404/Cosmodoro (`main`)
-- **최신 초안:** `design/drafts/v5-main.html`(메인), `design/drafts/v6-flight.html`(비행·태양계, 2026-10-29)
+- **최신 초안:** `design/drafts/v6-main.html`(메인), `design/drafts/v6-flight.html`(비행·태양계), 2026-11-01
 - **v6를 만든 이유:** 선배들이 비행 중 행성 3D 에셋, 우주 배경, 항해 연출이 "깬다"고 했어요. 조사 결과는 `design/research/우주 비행 장면 몰입감 개선.md`에 있어요.
 - **롤백용 시안:** v2~v5, A~C, `backup-*` 폴더예요. 건드리지 않아요. v5-flight도 그대로 남아 있어요.
 
@@ -18,9 +18,9 @@ python -m http.server 5520
 ```
 
 - 프로젝트 루트에서 실행해요.
-- 메인: http://localhost:5520/design/drafts/v5-main.html
+- 메인: http://localhost:5520/design/drafts/v6-main.html (이전 버전은 `v5-main.html`)
 - 태양계: http://localhost:5520/design/drafts/v6-flight.html?mode=atlas (v5는 `v5-flight.html?mode=atlas`)
-- 비행: `v6-flight.html?topic=code&min=25`로 열어요. 메인의 "발사"·"새 행성" 버튼도 v6로 가요(2026-10-30).
+- 비행: `v6-flight.html?topic=code&min=25`로 열어요. `v6-main`의 "발사"·"새 행성" 버튼이 v6 비행으로 가고, v6 비행의 귀환 버튼은 `v6-main`으로 돌아와요. `v5-main`↔`v5-flight`는 예전 그대로 짝이에요.
 - v6는 `assets/`의 텍스처를 불러와서 `file://`로는 안 열려요. 꼭 로컬 서버로 열어요.
 - `.claude/launch.json`에 `drafts` 설정이 있어서 Claude 브라우저 패널에서는 `preview_start {name:"drafts"}`로 띄워요.
 
@@ -29,7 +29,8 @@ python -m http.server 5520
 | 파일 | 역할 |
 |---|---|
 | `design/drafts/cosmo-shared.js` | 두 페이지가 같이 쓰는 데이터 (`window.COSMO`). module 스크립트보다 먼저 일반 `<script>`로 불러와요. |
-| `design/drafts/v5-main.html` | 메인 화면 |
+| `design/drafts/v6-main.html` | 메인 화면 (v5 메인 + 실제 행성 지도) |
+| `design/drafts/v5-main.html` | 이전 메인 화면 (롤백용) |
 | `design/drafts/v5-flight.html` | 비행 화면과 태양계(atlas) 화면 (롤백용) |
 | `design/drafts/v6-flight.html` | 비행·태양계 개선안. UI는 v5와 같고 3D 장면만 새로 짰어요 |
 | `design/drafts/assets/` | v6가 쓰는 실제 행성 지도, 은하수, 별 목록(약 13MB). 출처와 라이선스는 `assets/CREDITS.md` |
@@ -145,7 +146,7 @@ python -m http.server 5520
 
 ### 2026-11-01: 메인 행성 실제 지도 + KTX2
 
-- **메인 페이지(`v5-main.html`) 행성:** 절차 생성 표면 대신 비행 화면과 같은 실제 지도(1k)를 써요.
+- **메인 페이지(`v6-main.html`, v5 메인을 복사해 만들었어요) 행성:** 절차 생성 표면 대신 비행 화면과 같은 실제 지도(1k)를 써요.
   - 인쇄 질감 셰이더는 그대로예요. 지도에서 밝기만 읽어 잉크 톤으로 찍어요(`MAPS`의 `lo/hi`는 지도별 밝기 2~98% 구간).
   - 지도가 없는 천체(세레스, 이오, 얼음 위성, moonB)는 예전 절차 표면을 그대로 써요. 지도가 늦게 오거나 실패해도 절차 표면으로 보여요.
   - 토성 고리도 실제 고리 지도(`saturn_ring_1k.png`)를 쓰고, 고리 크기를 실제 비율(토성 반지름의 1.137~2.391배)로 바꿨어요.

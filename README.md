@@ -7,7 +7,8 @@
 ```
 design/            디자인 초안 (개발 코드와 분리)
   drafts/          HTML 초안. 빌드 없이 바로 열려요
-    v5-main.html   메인 (타이머·할 일·캘린더·통계)
+    v6-main.html   메인 (타이머·할 일·캘린더·통계) — 실제 행성 지도
+    v5-main.html   이전 메인 (롤백용, v5-flight로 이어져요)
     v6-flight.html 비행 / 태양계 개선안 (?mode=atlas) — 실제 행성 지도·실제 별
     v5-flight.html 이전 비행 화면 (롤백용)
     assets/        v6가 쓰는 행성 지도·은하수·별 목록과 출처(CREDITS.md)
@@ -34,4 +35,4 @@ packages/shared    웹·앱·서버 공용 타입과 동기화 로직
 python -m http.server 5520
 ```
 
-브라우저에서 http://localhost:5520/design/drafts/v5-main.html 을 열어요.
+브라우저에서 http://localhost:5520/design/drafts/v6-main.html 을 열어요.
