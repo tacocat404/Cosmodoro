@@ -1,0 +1,41 @@
+# Publish design/drafts to GitHub Pages (the gh-pages branch) on every push that touches the drafts,
+# so https://tacocat404.github.io/cosmodoro/ always shows the latest pushed version.
+name: Drafts to GitHub Pages
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['design/drafts/**', '.github/workflows/drafts-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: drafts-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the site
+        run: |
+          mkdir _site
+          cp -r design/drafts/. _site/
+          touch _site/.nojekyll
+          echo "${GITHUB_REF_NAME} @ ${GITHUB_SHA::7} · $(date -u +'%Y-%m-%d %H:%M UTC')" > _site/version.txt
+
+      - name: Push to gh-pages
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Drafts from ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

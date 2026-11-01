@@ -36,3 +36,6 @@ python -m http.server 5520
 ```
 
 브라우저에서 http://localhost:5520/design/drafts/v6-main.html 을 열어요.
+
+온라인 최신본: https://tacocat404.github.io/cosmodoro/ (초안 목록) · 메인 https://tacocat404.github.io/cosmodoro/v6-main.html
+`design/drafts/`가 바뀐 푸시마다 `.github/workflows/drafts-pages.yml`이 `gh-pages` 브랜치로 다시 올려요. 지금 올라간 버전은 `/version.txt`에 적혀 있어요.

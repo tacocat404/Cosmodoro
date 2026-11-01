@@ -19,6 +19,7 @@ python -m http.server 5520
 
 - 프로젝트 루트에서 실행해요.
 - 메인: http://localhost:5520/design/drafts/v6-main.html (이전 버전은 `v5-main.html`)
+- 온라인: https://tacocat404.github.io/cosmodoro/ — `design/drafts/`를 바꾼 푸시(main 또는 `claude/**` 브랜치)마다 GitHub Actions가 `gh-pages`로 다시 올려요. 가장 마지막에 푸시한 브랜치가 보여요. 버전은 `/version.txt`.
 - 태양계: http://localhost:5520/design/drafts/v6-flight.html?mode=atlas (v5는 `v5-flight.html?mode=atlas`)
 - 비행: `v6-flight.html?topic=code&min=25`로 열어요. `v6-main`의 "발사"·"새 행성" 버튼이 v6 비행으로 가고, v6 비행의 귀환 버튼은 `v6-main`으로 돌아와요. `v5-main`↔`v5-flight`는 예전 그대로 짝이에요.
 - v6는 `assets/`의 텍스처를 불러와서 `file://`로는 안 열려요. 꼭 로컬 서버로 열어요.
