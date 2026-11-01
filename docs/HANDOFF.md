@@ -157,6 +157,15 @@ python -m http.server 5520
   - 토성 고리는 8192×500 PNG 대신 같은 내용을 8192×4로 줄인 `saturn_ring_8k_strip.png`를 써요(셰이더가 가운데 한 줄만 읽어요).
   - 다시 만들 때: npm `ktx2-encoder@0.6.0` + `sharp`로 `{ isUASTC:false, generateMipmap:true, isYFlip:true, qualityLevel:200 }`(색 지도는 sRGB, `earth_bump_rough_clouds`는 선형·품질 255).
 
+### 2026-11-01: 비행 중 미션 목록 (시안 A, HUD 인라인 확장)
+
+- 지금 미션 아래 `화성 미션 N ▾ M` 버튼이나 **M 키**로 이 행성 미션만 펼쳐요. 카드 없이 HUD 글자가 아래로 이어지고 얇은 세로선만 있어요. Esc·M·바깥 클릭으로 닫혀요.
+- 목록에서 할 수 있는 것: 번호를 눌러 완료(다시 누르면 취소), 마우스를 올리면 나오는 `바꾸기`로 지금 미션 바꾸기, 맨 아래 칸에 적고 Enter로 미션 추가.
+- 지금 미션을 끝내면(체크박스나 목록) 아래에 "미션 완료 · 다음 ○○ / 이어서 하기 / 그대로 비행"이 8초 동안 떠요.
+- 데이터는 메인과 같은 `localStorage['cosmodoro.missions']`예요. 메인의 발사 링크가 `mid`(미션 id)를 넘겨서 지금 미션을 정확히 찾아요. 메인 없이 열면 메인의 시작 목록을 써요.
+- 목록이나 다음 안내가 열려 있는 동안은 HUD가 흐려지지 않아요(`calm` 안 걸림), 목록 위 드래그는 카메라를 돌리지 않아요.
+- 시안 4종 캔버스: https://claude.ai/artifact/RGcYFSYhCkUDUy2w6zW2ph (A 채택)
+
 ## 7. 테스트 팁 (Claude 브라우저 패널)
 
 - 패널이 숨겨져 있으면 rAF와 CSS 전환이 멈춰요.

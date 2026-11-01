@@ -137,6 +137,38 @@
   .check input { appearance: none; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid #555; display: grid; place-items: center; cursor: pointer; margin: 0; }
   .check input:checked { background: var(--accent); border-color: var(--accent); }
   .check input:checked::after { content: "✓"; color: #000; font-size: 10px; font-weight: 700; }
+  /* this planet's missions: the HUD text simply runs on downward, no card, so the sky stays the background */
+  .mission-meta.done-cur .t { color: var(--ink-3); text-decoration: line-through; }
+  .ml-toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 0; background: none; border: 0; cursor: pointer; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--ink-2); transition: color .2s; }
+  .ml-toggle:hover, .ml-toggle[aria-expanded="true"] { color: var(--ink); }
+  .ml-toggle svg { transition: transform .25s; }
+  .ml-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .ml-toggle kbd { font: inherit; font-size: 9.5px; letter-spacing: 0; color: var(--ink-3); border: 1px solid rgba(242,242,239,.2); border-radius: 3px; padding: 0 4px; }
+  .ml-list, .ml-next { width: 320px; text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+  .ml-list { margin-top: 14px; padding-left: 14px; border-left: 1px solid rgba(242,242,239,.14); animation: mlIn .3s ease; }
+  @keyframes mlIn { from { opacity: 0; transform: translateY(-4px); } }
+  .ml-list ol { list-style: none; margin: 0; padding: 0; }
+  .ml-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 0; font-family: var(--body); font-size: 13px; letter-spacing: 0; color: rgba(242,242,239,.86); }
+  .ml-row .no { position: relative; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; font-family: var(--mono); font-size: 10px; color: var(--ink-2); }
+  .ml-row .no:hover::before { content: "✓"; position: absolute; }
+  .ml-row .no:hover span { visibility: hidden; }
+  .ml-row .side { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--ink-2); }
+  .ml-row .swap { display: none; background: none; border: 0; border-bottom: 1px solid rgba(242,242,239,.4); padding: 0 0 1px; cursor: pointer; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--ink); }
+  .ml-row:hover .swap, .ml-row .swap:focus-visible { display: inline; }
+  .ml-row:hover .swap + .side, .ml-row .swap:focus-visible + .side { display: none; }
+  .ml-row.cur { color: var(--ink); }
+  .ml-row.cur .no, .ml-row.cur .side { color: var(--accent); }
+  .ml-row.done { color: var(--ink-3); text-decoration: line-through; text-decoration-color: rgba(242,242,239,.3); }
+  .ml-row.done .no, .ml-row.done .side { color: var(--ink-3); }
+  .ml-empty { padding: 6px 0; font-size: 12px; color: var(--ink-2); font-family: var(--body); letter-spacing: 0; }
+  .ml-add { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 8px; padding-top: 8px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .ml-add input { background: none; border: 0; border-bottom: 1px solid rgba(242,242,239,.18); color: var(--ink); font-family: var(--body); font-size: 13px; letter-spacing: 0; padding: 4px 0; outline: none; }
+  .ml-add input:focus { border-bottom-color: rgba(242,242,239,.5); }
+  .ml-add input::placeholder { color: var(--ink-3); }
+  .ml-next { margin-top: 12px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-2); animation: mlIn .3s ease; }
+  .ml-next b { display: block; margin: 5px 0 8px; font-family: var(--body); font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--ink); }
+  .ml-next button { background: none; border: 0; border-bottom: 1px solid rgba(242,242,239,.4); padding: 0 0 1px; margin-right: 14px; cursor: pointer; font: inherit; color: var(--ink); }
+  .ml-next button.ghost { border-color: transparent; color: var(--ink-2); }
 
   .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 22px; }
   /* cockpit HUD: a key hint for the view, a ⋯ for everything else, and two readouts beside a progress tape */
@@ -324,7 +356,7 @@
   <div class="top">
     <div class="top-left">
       <div class="brand"><svg class="logo" viewBox="0 -4 464 84" role="img" aria-label="Cosmodoro"><defs><filter id="brandg" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="a"/><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="a"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#brandg)"><g fill="none" stroke="currentColor" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"><path d="M31 8A17 17 0 1 0 31 32" transform="translate(6.0 22)"/><path d="M25 6C20 2.5 7 3 7 11C7 17 13 18 16 19.5M21 22.5C26 25.5 26.5 36 17 37C11 37.6 7 36 5 34" transform="translate(134.0 22)"/><path d="M4 37V4L21 25M27 18L40 4V37" transform="translate(175.0 22)"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(230.0 22)"/><path d="M4 4V36M12 4H14A16 16 0 0 1 14 36H12" transform="translate(281.0 22)"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(326.0 22)"/><path d="M4 14V37M11 4H15A8.5 8.5 0 0 1 15 21H10M17 27L26 37" transform="translate(377.0 22)"/><circle cx="381.0" cy="26" r="3.6" fill="currentColor" stroke="none"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(418.0 22)"/></g><mask id="brandRing" maskUnits="userSpaceOnUse" x="-50" y="-50" width="700" height="200"><rect x="-50" y="-50" width="700" height="200" fill="#fff"/><line x1="47.9" y1="74.7" x2="121.8" y2="12.8" stroke="#000" stroke-width="10.8"/><circle cx="92.2" cy="38.9" r="15.3" fill="#000"/></mask><g mask="url(#brandRing)" fill="none" stroke="currentColor"><circle cx="87.0" cy="42.0" r="33" stroke-width="5.4"/><path d="M87.0 9.0v7.2M120.0 42.0h-7.2M87.0 75.0v-7.2M54.0 42.0h7.2" stroke-width="5.0"/></g><circle cx="80.8" cy="47.2" r="15.5" fill="currentColor" mask="url(#brandRing)"/><circle cx="92.2" cy="38.9" r="10.3" fill="none" stroke="currentColor" stroke-width="4.5"/><line x1="58.1" y1="66.2" x2="121.8" y2="12.8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path class="rk" d="M13 0C7-3.4-3-3.4-7-2.3L-7 2.3C-3 3.4 7 3.4 13 0Z M-3-2.6L-10-7.5L-7-2.2Z M-3 2.6L-10 7.5L-7 2.2Z" transform="translate(128.7 7.0) rotate(-40) scale(1.05)"/></g></svg></div>
-      <div class="meta mission-meta t2"><b id="mNo">Mission 01</b><div class="rule"></div><div class="t" id="mText">로그인 화면 API 연결</div><label class="check"><input type="checkbox" id="mDone">도착 전에 끝냈어요</label></div>
+      <div class="meta mission-meta t2"><b id="mNo">Mission 01</b><div class="rule"></div><div class="t" id="mText">로그인 화면 API 연결</div><label class="check"><input type="checkbox" id="mDone">도착 전에 끝냈어요</label><button type="button" class="ml-toggle" id="mlToggle" aria-expanded="false" aria-controls="mlList"><span id="mlLabel">미션</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd>M</kbd></button><div class="ml-list" id="mlList" hidden><ol id="mlRows"></ol><label class="ml-add"><span aria-hidden="true">+</span><input id="mlInput" type="text" maxlength="60" placeholder="미션 추가" aria-label="이 행성에 미션 추가"></label></div><div class="ml-next" id="mlNext" hidden>미션 완료 · 다음<b id="mlNextT"></b><button type="button" id="mlNextGo">이어서 하기</button><button type="button" class="ghost" id="mlNextNo">그대로 비행</button></div></div>
     </div>
     <div class="top-right t2">
       <div class="hud-keys">
@@ -458,6 +490,7 @@ const T = TOPICS[topicKey];
 const MIN = Math.min(180, Math.max(1, Math.round(+q.get('min')) || 25));
 const MISSION = q.get('mission') || '로그인 화면 API 연결';
 const NO = q.get('no') || '01';
+const MID = q.get('mid');
 document.documentElement.style.setProperty('--accent', T.accent);
 
 const $ = id => document.getElementById(id);
@@ -1766,7 +1799,127 @@ function arrive() {
   $('soundToast').classList.remove('on');
   setTimeout(() => { F.snap = true; }, 900);
 }
-$('arrDone').addEventListener('change', e => { flight.done = e.target.checked; $('mDone').checked = flight.done; saveFlight(); });
+$('arrDone').addEventListener('change', e => { flight.done = e.target.checked; $('mDone').checked = flight.done; syncCurDone(); saveFlight(); });
+
+/* this planet's missions, from the same list the main page keeps (cosmodoro.missions).
+   Opened with the button under the mission or M; Esc, M or a click elsewhere closes it. */
+const ML = (() => {
+  const day = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  let list = null;
+  try { list = JSON.parse(store.get('cosmodoro.missions', 'null')); } catch {}
+  /* opened on its own (no main page yet): the main page's starter list */
+  if (!Array.isArray(list)) list = [
+    { id: 1, t: '로그인 화면 API 연결', topic: 'code', done: false, date: day(0) },
+    { id: 2, t: '통계 차트 컴포넌트 만들기', topic: 'code', done: false, date: day(1) },
+    { id: 3, t: '온보딩 일러스트 시안 3개', topic: 'design', done: false, date: day(0) },
+    { id: 4, t: '『코스모스』 7장 읽기', topic: 'read', done: false, date: day(3) },
+    { id: 5, t: '아침 단어 30개 외우기', topic: 'eng', done: true, date: day(-1) },
+    { id: 6, t: '단어 시험 대비 복습', topic: 'eng', done: false, date: day(1) },
+    { id: 7, t: '디자인 시스템 문서 정리', topic: 'design', done: false, date: '' },
+    { id: 101, kind: 'goal', t: '군대 특기병 준비', topic: 'eng', done: false, date: '' },
+    { id: 102, kind: 'goal', t: '포트폴리오 사이트 완성', topic: 'code', done: false, date: '' },
+    { id: 103, kind: 'goal', t: '올해 책 24권 읽기', topic: 'read', done: false, date: '' },
+  ];
+  const save = () => store.set('cosmodoro.missions', JSON.stringify(list));
+  const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); })();
+  const mine = () => list.filter(m => m.kind !== 'goal' && m.topic === topicKey && (!m.done || (m.doneAt || 0) >= weekStart));
+  let cur = list.find(m => String(m.id) === MID) || list.find(m => m.kind !== 'goal' && m.topic === topicKey && m.t === MISSION) || null;
+  return { list, save, mine, day, get cur() { return cur; }, set cur(m) { cur = m; } };
+})();
+const mlEl = { toggle: $('mlToggle'), list: $('mlList'), rows: $('mlRows'), input: $('mlInput'), next: $('mlNext') };
+const dateLabel = d => {
+  if (!d) return '';
+  if (d === ML.day(0)) return '오늘';
+  if (d === ML.day(1)) return '내일';
+  if (d === ML.day(-1)) return '어제';
+  return `${d.slice(5, 7)}.${d.slice(8, 10)}`;
+};
+function renderMissions() {
+  const ms = ML.mine().sort((a, b) => (a.done - b.done) || (b === ML.cur) - (a === ML.cur));
+  const left = ms.filter(m => !m.done).length;
+  $('mlLabel').textContent = `${T.ko} 미션 ${left}`;
+  mlEl.rows.replaceChildren(...ms.map((m, i) => {
+    const li = document.createElement('li');
+    const isCur = m === ML.cur;
+    li.className = 'ml-row' + (isCur ? ' cur' : '') + (m.done ? ' done' : '');
+    const no = document.createElement('button');
+    no.type = 'button'; no.className = 'no';
+    no.setAttribute('aria-label', m.done ? `${m.t} 완료 취소` : `${m.t} 완료`);
+    no.innerHTML = `<span>${m.done ? '✓' : String(i + 1).padStart(2, '0')}</span>`;
+    no.addEventListener('click', () => setDone(m, !m.done));
+    const t = document.createElement('span'); t.textContent = m.t;
+    const side = document.createElement('span'); side.className = 'side';
+    side.textContent = isCur && !m.done ? '비행 중' : m.done ? '완료' : dateLabel(m.date);
+    li.append(no, t);
+    if (!isCur && !m.done) {
+      const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'swap'; sw.textContent = '바꾸기';
+      sw.addEventListener('click', () => switchTo(m));
+      li.append(sw);
+    }
+    li.append(side);
+    return li;
+  }));
+  if (!ms.length) mlEl.rows.innerHTML = '<li class="ml-empty">이 행성엔 아직 미션이 없어요</li>';
+}
+function openMissions(on) {
+  mlEl.list.hidden = !on;
+  mlEl.toggle.setAttribute('aria-expanded', String(on));
+  if (on) { mlEl.next.hidden = true; renderMissions(); wake(); }
+}
+const missionsOpen = () => !mlEl.list.hidden;
+/* the flight's own mission: its checkbox, the arrival checkbox and the list all say the same thing */
+function syncCurDone() {
+  const done = $('mDone').checked;
+  document.querySelector('.mission-meta').classList.toggle('done-cur', done);
+  if (ML.cur && ML.cur.done !== done) { ML.cur.done = done; if (done) ML.cur.doneAt = Date.now(); ML.save(); }
+  if (missionsOpen()) renderMissions(); else $('mlLabel').textContent = `${T.ko} 미션 ${ML.mine().filter(m => !m.done).length}`;
+}
+let nextTimer = 0;
+function offerNext() {
+  const nxt = ML.mine().find(m => !m.done && m !== ML.cur);
+  if (!nxt || missionsOpen()) return;
+  $('mlNextT').textContent = nxt.t;
+  mlEl.next.hidden = false; wake();
+  $('mlNextGo').onclick = () => switchTo(nxt);
+  clearTimeout(nextTimer);
+  nextTimer = setTimeout(() => { mlEl.next.hidden = true; }, 8000);
+}
+function setDone(m, done) {
+  m.done = done; if (done) m.doneAt = Date.now();
+  ML.save();
+  if (m === ML.cur) { $('mDone').checked = done; flight.done = done; $('arrDone').checked = done; saveFlight(); syncCurDone(); }
+  renderMissions();
+}
+function switchTo(m) {
+  ML.cur = m;
+  $('mText').textContent = m.t; $('arrMission').textContent = m.t;
+  flight.mission = m.t; flight.done = !!m.done; saveFlight();
+  $('mDone').checked = flight.done; $('arrDone').checked = flight.done;
+  syncCurDone();
+  mlEl.next.hidden = true;
+  log('미션', m.t);
+  if (missionsOpen()) renderMissions();
+}
+mlEl.toggle.addEventListener('click', () => openMissions(!missionsOpen()));
+$('mlNextNo').addEventListener('click', () => { mlEl.next.hidden = true; });
+$('mDone').addEventListener('change', () => { flight.done = $('mDone').checked; syncCurDone(); saveFlight(); if (flight.done) offerNext(); });
+mlEl.input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.isComposing) {
+    const t = mlEl.input.value.trim();
+    if (!t) return;
+    ML.list.push({ id: Date.now(), t, topic: topicKey, done: false, date: ML.day(0) });
+    ML.save(); mlEl.input.value = ''; renderMissions();
+  }
+  if (e.key === 'Escape') { mlEl.input.blur(); openMissions(false); }
+  e.stopPropagation();
+});
+addEventListener('keydown', e => {
+  if (ATLAS || e.target.tagName === 'INPUT') return;
+  if (e.key === 'm' || e.key === 'M') openMissions(!missionsOpen());
+  if (e.key === 'Escape' && missionsOpen()) openMissions(false);
+});
+addEventListener('pointerdown', e => { if (missionsOpen() && !e.target.closest('.mission-meta')) openMissions(false); });
+syncCurDone();
 document.querySelectorAll('.rate button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.rate button').forEach(x => x.classList.toggle('on', x === b));
   flight.rating = +b.dataset.r; saveFlight();
@@ -1834,7 +1987,7 @@ document.querySelectorAll('#soundToast [data-sound]').forEach(b => b.addEventLis
 /* look around: drag to orbit the camera around the ship (or the map), wheel for distance, double-click or R to reset */
 const ORB = { yaw: 0, pitch: 0, zoom: 1, ty: 0, tp: 0, tz: 1, drag: null, moved: false, at: -1e9 };
 const orbitReset = () => { ORB.ty = 0; ORB.tp = 0; ORB.tz = 1; ORB.at = performance.now(); };
-const UI_HIT = 'button, a, input, label, .settings, .pd, .arrival, .toast, .atlas-back';
+const UI_HIT = 'button, a, input, label, .settings, .pd, .arrival, .toast, .atlas-back, .ml-list, .ml-next';
 const onUI = (e, sel = UI_HIT) => !!(e.target && e.target.closest && e.target.closest(sel));
 addEventListener('pointerdown', e => {
   if (e.button !== 0 || onUI(e)) return;
@@ -2309,7 +2462,7 @@ function frame(now) {
     $('tape').style.setProperty('--p', (p * 100) + '%');
   }
   idle += wallDt;
-  if (!calm && idle > 6 && moving && !$('settings').classList.contains('on')) document.body.classList.add('calm');
+  if (!calm && idle > 6 && moving && !$('settings').classList.contains('on') && !missionsOpen() && mlEl.next.hidden) document.body.classList.add('calm');
   if (now - titleAt > 1000) {
     titleAt = now;
     document.title = F.arrived ? `도착 · ${T.ko} — Cosmodoro` : `${fmt(Math.ceil(remain - 0.001))} · ${T.ko}행 — Cosmodoro`;
