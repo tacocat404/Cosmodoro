@@ -2128,10 +2128,13 @@ function frame(now) {
   const burnTarget = !F.started || F.arrived ? 0 : (F.clock < BURN_SECS || p >= BURN0) ? 1 : 0;
   F.burn += (burnTarget - F.burn) * Math.min(1, dt * 1.2);
   F.m += ((F.view === 'system' ? 1 : 0) - F.m) * Math.min(1, dt * (ATLAS ? 0.42 : 1.6));
+  if (Math.abs((F.view === 'system' ? 1 : 0) - F.m) < 0.004) F.m = F.view === 'system' ? 1 : 0;
   const e = F.m * F.m * (3 - 2 * F.m);
   const stage = ATLAS ? 0 : 1 - e;      /* 1: the honest flight camera, 0: the map */
   /* the orbits settle into their map spacing in the first part of the switch, while the camera is still beside the ship */
   const eg = ATLAS ? e : smooth(e, 0, 0.4);
+  /* the flight's own Earth: gone the moment we leave for the map, back as soon as the map's Earth has gone on the way home */
+  const flightEarth = stage > (F.view === 'system' ? 0.97 : 0.75);
 
   /* --- the map (orrery): where everything is, which sets every direction and every phase --- */
   Object.values(bodies).forEach(b => {
@@ -2249,7 +2252,7 @@ function frame(now) {
     }
     let dir = null, D = 0, th = 0;
     if (k === destKey) { dir = fwd; D = D_DEST; th = thD; }
-    else if (k === 'earth' && stage > 0.97) {
+    else if (k === 'earth' && flightEarth) {
       /* the flight's Earth belongs to the flight only: once the switch starts it leaves, and the map's Earth
          grows in at its orbit like every other world (no shrinking Earth across the move) */
       /* Earth on its real bearing from here (about 155-160 deg off the bow), the same place the map has it */
@@ -2288,8 +2291,8 @@ function frame(now) {
     tmp.set(eb.orr.x + Math.cos(ma) * moon.dist * eb.s, eb.orr.y, eb.orr.z + Math.sin(ma) * moon.dist * eb.s);
     moonOff.copy(fwd).negate().multiplyScalar(0.6).addScaledVector(right, -0.45).addScaledVector(up, 0.35).normalize();
     tmp2.copy(eb.tilt.position).addScaledVector(moonOff, 60.3 * Re);
-    moon.mesh.position.copy(stage > 0.97 ? tmp2 : tmp);
-    moon.mesh.scale.setScalar(stage > 0.97 ? 0.2727 * Re : moon.size * eb.s * (1 - smooth(stage, 0.35, 0.75)));
+    moon.mesh.position.copy(flightEarth ? tmp2 : tmp);
+    moon.mesh.scale.setScalar(flightEarth ? 0.2727 * Re : moon.size * eb.s * (1 - smooth(stage, 0.35, 0.75)));
     moon.mesh.material.uniforms.uSun.value.copy(eb.uniforms.uSun.value);
     moon.mesh.visible = eb.mesh.visible;
   }
