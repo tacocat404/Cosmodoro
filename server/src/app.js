@@ -28,7 +28,10 @@ function openDb(dbPath) {
   return { raw: db, run: async (sql, p = []) => db.prepare(sql).run(...p), get: async (sql, p = []) => db.prepare(sql).get(...p) };
 }
 
-export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseURL = env.BETTER_AUTH_URL || 'http://localhost:8787' } = {}) {
+/* the public address: set it, or on Vercel it's the production domain */
+const PUBLIC_URL = env.BETTER_AUTH_URL || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:8787');
+
+export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseURL = PUBLIC_URL } = {}) {
   if (env.NODE_ENV === 'production' && !env.BETTER_AUTH_SECRET) throw new Error('BETTER_AUTH_SECRET is required in production');
   const db = openDb(dbPath);
   const auth = betterAuth({
