@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmodoro · 초안 C 인터스텔라</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<style>
+  :root {
+    --bg: #000;
+    --ink: #f2f2ef;
+    --ink-2: rgba(242, 242, 239, .62);
+    --ink-3: rgba(242, 242, 239, .36);
+    --hair: #262626;
+    --code: #ff5b1f;
+    --design: #27c2b0;
+    --read: #eadcb4;
+    --eng: #2f7cff;
+    --display: "Inter Tight", "Pretendard Variable", sans-serif;
+    --body: "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--hair); color: var(--ink); font-family: var(--body); overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+  .grain {
+    position: fixed; inset: -50%; z-index: 50; pointer-events: none; opacity: .11; mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 -0.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: grain .9s steps(5) infinite;
+  }
+  @keyframes grain {
+    0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+    60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+  }
+
+  .board {
+    height: 100vh; display: grid; gap: 1px;
+    grid-template-columns: minmax(0, 3fr) repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .cell { background: var(--bg); position: relative; overflow: hidden; }
+
+  .meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-2); line-height: 1.55; }
+  .meta b { color: var(--ink); font-weight: 500; }
+  .rule { width: 18px; height: 1px; background: currentColor; opacity: .6; margin: 7px 0; }
+
+  /* ---------- hero ---------- */
+  .hero { grid-row: 1 / span 2; grid-column: 1; }
+  #heroCanvas, #heroOrbits { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero-top { position: absolute; left: 40px; top: 36px; right: 40px; display: flex; gap: 46px; z-index: 2; }
+  .hero-bottom { position: absolute; left: 40px; right: 40px; bottom: 34px; z-index: 2; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--ink-2); display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--code); box-shadow: 0 0 12px var(--code); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .timer {
+    font-family: var(--display); font-weight: 500; font-size: clamp(96px, 11.4vw, 176px); line-height: .9; letter-spacing: -.045em;
+    font-variant-numeric: tabular-nums; margin-left: -6px;
+  }
+  .foot { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: end; margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--hair); }
+  .big-no { font-family: var(--display); font-weight: 600; font-size: 54px; line-height: .8; letter-spacing: -.03em; }
+  .foot p { font-size: 12.5px; line-height: 1.6; color: var(--ink-2); max-width: 330px; }
+  .foot p b { color: var(--ink); font-weight: 600; }
+  .ctrls { display: flex; gap: 8px; }
+  .ctrl {
+    width: 42px; height: 42px; border-radius: 50%; border: 1px solid #3a3a3a; background: transparent; color: var(--ink);
+    display: grid; place-items: center; cursor: pointer; transition: background .25s, border-color .25s, color .25s;
+  }
+  .ctrl:hover { border-color: var(--ink); }
+  .ctrl.main { background: var(--ink); color: #000; border-color: var(--ink); }
+  .ctrl.main:hover { background: #fff; }
+  .ship-tag { position: absolute; z-index: 2; font-family: var(--mono); font-size: 10px; color: var(--code); letter-spacing: .06em; white-space: nowrap; transform: translate(16px, -50%); }
+  .ship-tag span { color: var(--ink-3); }
+
+  /* ---------- mission index ---------- */
+  .missions { grid-row: 1; grid-column: 2 / span 2; padding: 30px 30px 26px; display: flex; flex-direction: column; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+  .card-head h2 { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -.02em; line-height: 1.1; }
+  .card-head h2 small { display: block; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .06em; color: var(--ink-3); margin-top: 6px; }
+  .count { font-family: var(--display); font-size: 40px; font-weight: 300; line-height: .8; letter-spacing: -.04em; }
+  .mlist { list-style: none; position: relative; z-index: 1; }
+  .mitem {
+    display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: baseline; padding: 11px 0; border-top: 1px solid var(--hair);
+    cursor: pointer; transition: padding .3s;
+  }
+  .mitem:hover { padding-left: 6px; }
+  .mitem .no { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .mitem .t { font-size: 14px; }
+  .mitem .tp { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+  .mitem .tp i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .mitem.cur .no { color: var(--code); }
+  .mitem.cur .t::after { content: "비행 중"; font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; color: var(--code); border: 1px solid var(--code); border-radius: 999px; padding: 1px 7px; margin-left: 8px; vertical-align: 2px; }
+  .mitem.done .t { color: var(--ink-3); text-decoration: line-through; text-decoration-color: #555; }
+  .add-line { margin-top: auto; padding-top: 14px; border-top: 1px dashed #333; display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 13px; cursor: text; transition: color .25s; position: relative; z-index: 1; }
+  .add-line:hover { color: var(--ink); }
+  .tunnel { position: absolute; right: -40px; bottom: -30px; width: 260px; height: 260px; opacity: .55; pointer-events: none; }
+
+  /* ---------- flight log (inverted) ---------- */
+  .log { grid-row: 1; grid-column: 4 / span 2; background: #f1f0ec; color: #0b0b0b; padding: 30px 30px 26px; display: flex; flex-direction: column; }
+  .log .card-head h2 small { color: rgba(11,11,11,.45); }
+  .toggle { display: flex; gap: 14px; font-size: 12.5px; }
+  .toggle span { color: rgba(11,11,11,.4); cursor: pointer; padding-bottom: 3px; border-bottom: 1px solid transparent; transition: color .25s; }
+  .toggle span:hover { color: #0b0b0b; }
+  .toggle span.on { color: #0b0b0b; font-weight: 600; border-color: #0b0b0b; }
+  .log-total { font-family: var(--display); font-weight: 600; font-size: 72px; letter-spacing: -.05em; line-height: .9; position: relative; z-index: 1; }
+  .log-total small { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .04em; color: rgba(11,11,11,.5); margin-left: 4px; vertical-align: 6px; }
+  .log-sub { font-family: var(--mono); font-size: 10.5px; color: rgba(11,11,11,.55); margin-top: 8px; position: relative; z-index: 1; }
+  .lolli { margin-top: 22px; height: 108px; display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; position: relative; z-index: 1; }
+  .lolli div { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .lolli .stick { width: 1px; background: #0b0b0b; position: relative; }
+  .lolli .stick::before { content: ""; position: absolute; top: -4px; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: #0b0b0b; }
+  .lolli .today .stick::before { background: var(--code); box-shadow: 0 0 0 4px rgba(255,91,31,.18); }
+  .lolli .empty .stick::before { background: transparent; border: 1px solid #0b0b0b; }
+  .lolli .lbl { font-family: var(--mono); font-size: 10px; color: rgba(11,11,11,.5); margin-top: 8px; }
+  .lolli .today .lbl { color: var(--code); font-weight: 500; }
+  .log-row { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(11,11,11,.15); padding-top: 14px; position: relative; z-index: 1; }
+  .log-row div { font-family: var(--mono); font-size: 10px; color: rgba(11,11,11,.5); }
+  .log-row b { display: block; font-family: var(--display); font-size: 22px; font-weight: 600; color: #0b0b0b; letter-spacing: -.03em; margin-top: 2px; }
+  .eclipse { position: absolute; right: -120px; top: -150px; width: 300px; height: 300px; border-radius: 50%; background: #0b0b0b; }
+  .eclipse::after { content: ""; position: absolute; inset: -14px; border-radius: 50%; border: 1px solid rgba(11,11,11,.18); }
+
+  /* ---------- topic posters ---------- */
+  .poster { grid-row: 2; padding: 22px 20px 20px; display: flex; flex-direction: column; cursor: pointer; transition: background .4s; }
+  .poster:hover { background: #070707; }
+  .poster svg.art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .poster .ph { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; }
+  .poster .pb { position: relative; z-index: 1; margin-top: auto; }
+  .poster .num { font-family: var(--display); font-weight: 600; font-size: 46px; letter-spacing: -.04em; line-height: .85; margin-top: 14px; }
+  .poster .title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .poster .hrs { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+  .poster .tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; border: 1px solid currentColor; border-radius: 999px; padding: 2px 8px; }
+  .poster.on { box-shadow: inset 0 2px 0 var(--code); }
+  .poster.add { align-items: center; justify-content: center; }
+
+  @media (max-width: 1100px) {
+    body { overflow: auto; }
+    .board { height: auto; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: 88vh auto auto 420px; }
+    .hero { grid-column: 1 / -1; grid-row: 1; }
+    .missions { grid-column: 1 / span 2; grid-row: 2; min-height: 460px; }
+    .log { grid-column: 3 / span 2; grid-row: 2; min-height: 460px; }
+    .poster { grid-row: 3; min-height: 420px; }
+  }
+  @media (max-width: 640px) {
+    .board { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 92vh auto auto auto auto; }
+    .missions, .log { grid-column: 1 / -1; }
+    .log { grid-row: 3; }
+    .poster { grid-row: auto; min-height: 340px; }
+    .hero-top { gap: 20px; left: 20px; right: 20px; }
+    .hero-bottom { left: 20px; right: 20px; }
+    .foot { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<main class="board">
+  <!-- hero: current flight -->
+  <section class="cell hero" id="hero">
+    <canvas id="heroCanvas"></canvas>
+    <svg id="heroOrbits" aria-hidden="true"></svg>
+    <div class="ship-tag" id="shipTag">SHIP — 25% <span>/ 6분 18초 비행</span></div>
+
+    <div class="hero-top">
+      <div class="meta"><b>Cosmodoro</b><div class="rule"></div>Interstellar focus series<br>우주뽀모도로</div>
+      <div class="meta"><b>Mission 03</b><div class="rule"></div>지구 기지 → 화성<br>코딩 · 25분 비행</div>
+      <div class="meta"><b>2026.10.24</b><div class="rule"></div>Sat · 14:26 KST<br>세션 3 / 4</div>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="eyebrow"><i></i>화성 도착까지 — Mars arrival in</div>
+      <div class="timer" id="timer">18:42</div>
+      <div class="foot">
+        <div class="big-no">03</div>
+        <p>지금 미션은 <b>로그인 화면 API 연결</b>. 도착하면 정거장에 도킹해 5분 쉬고, 네 번째 비행이 끝나면 긴 휴식 궤도로 들어가요.</p>
+        <div class="ctrls">
+          <button class="ctrl" aria-label="비상 귀환"><iconify-icon icon="solar:stop-linear" width="17"></iconify-icon></button>
+          <button class="ctrl main" aria-label="일시정지"><iconify-icon icon="solar:pause-bold" width="18"></iconify-icon></button>
+          <button class="ctrl" aria-label="정거장으로"><iconify-icon icon="solar:cup-hot-linear" width="18"></iconify-icon></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- mission index (todo) -->
+  <section class="cell missions">
+    <svg class="tunnel" id="tunnel" viewBox="0 0 260 260" aria-hidden="true"></svg>
+    <div class="card-head">
+      <h2>Mission index<small>할 일 — 오늘의 항해 목록</small></h2>
+      <div class="count">04</div>
+    </div>
+    <ul class="mlist">
+      <li class="mitem cur"><span class="no">01</span><span class="t">로그인 화면 API 연결</span><span class="tp"><i style="background:var(--code)"></i>코딩</span></li>
+      <li class="mitem"><span class="no">02</span><span class="t">통계 차트 컴포넌트 만들기</span><span class="tp"><i style="background:var(--code)"></i>코딩</span></li>
+      <li class="mitem"><span class="no">03</span><span class="t">온보딩 일러스트 시안 3개</span><span class="tp"><i style="background:var(--design)"></i>디자인</span></li>
+      <li class="mitem"><span class="no">04</span><span class="t">『코스모스』 7장 읽기</span><span class="tp"><i style="background:var(--read)"></i>독서</span></li>
+      <li class="mitem done"><span class="no">05</span><span class="t">아침 단어 30개 외우기</span><span class="tp"><i style="background:var(--eng)"></i>영어</span></li>
+    </ul>
+    <div class="add-line"><iconify-icon icon="solar:add-circle-linear" width="17"></iconify-icon>새 미션 기록하기</div>
+  </section>
+
+  <!-- flight log (stats) -->
+  <section class="cell log">
+    <div class="eclipse"></div>
+    <div class="card-head" style="position:relative;z-index:1">
+      <h2>Flight log<small>집중 기록</small></h2>
+    </div>
+    <div class="toggle" style="position:relative;z-index:1;margin:-8px 0 18px"><span>오늘</span><span class="on">이번 주</span><span>이번 달</span></div>
+    <div class="log-total">14:05<small>H : M</small></div>
+    <div class="log-sub">지난주보다 +1:31 · 비행 34회</div>
+    <div class="lolli">
+      <div><span class="stick" style="height:46%"></span><span class="lbl">월</span></div>
+      <div><span class="stick" style="height:72%"></span><span class="lbl">화</span></div>
+      <div><span class="stick" style="height:58%"></span><span class="lbl">수</span></div>
+      <div><span class="stick" style="height:88%"></span><span class="lbl">목</span></div>
+      <div><span class="stick" style="height:40%"></span><span class="lbl">금</span></div>
+      <div class="today"><span class="stick" style="height:66%"></span><span class="lbl">토</span></div>
+      <div class="empty"><span class="stick" style="height:6%"></span><span class="lbl">일</span></div>
+    </div>
+    <div class="log-row">
+      <div>오늘<b>3:20</b></div>
+      <div>이번 달<b>52:10</b></div>
+      <div>연속<b>18일</b></div>
+    </div>
+  </section>
+
+  <!-- topic posters -->
+  <section class="cell poster on" data-art="code" style="grid-column:2">
+    <svg class="art" aria-hidden="true"></svg>
+    <div class="ph"><span class="meta">No. 01</span><span class="tag" style="color:var(--code)">현재 항로</span></div>
+    <div class="pb">
+      <div class="title">화성 — 코딩</div>
+      <div class="hrs">이번 달 18:20 · 41회</div>
+      <div class="num">01</div>
+    </div>
+  </section>
+  <section class="cell poster" data-art="design" style="grid-column:3">
+    <svg class="art" aria-hidden="true"></svg>
+    <div class="ph"><span class="meta">No. 02</span></div>
+    <div class="pb">
+      <div class="title">금성 — 디자인</div>
+      <div class="hrs">이번 달 12:05 · 27회</div>
+      <div class="num">02</div>
+    </div>
+  </section>
+  <section class="cell poster" data-art="read" style="grid-column:4">
+    <svg class="art" aria-hidden="true"></svg>
+    <div class="ph"><span class="meta">No. 03</span></div>
+    <div class="pb">
+      <div class="title">토성 — 독서</div>
+      <div class="hrs">이번 달 13:10 · 30회</div>
+      <div class="num">03</div>
+    </div>
+  </section>
+  <section class="cell poster" data-art="eng" style="grid-column:5">
+    <svg class="art" aria-hidden="true"></svg>
+    <div class="ph"><span class="meta">No. 04</span></div>
+    <div class="pb">
+      <div class="title">해왕성 — 영어</div>
+      <div class="hrs">이번 달 08:35 · 20회</div>
+      <div class="num">04</div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------- SVG helpers ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function arcPath(cx, cy, r, a0, a1) {
+  const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+  const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+  const large = Math.abs(a1 - a0) > Math.PI ? 1 : 0;
+  const sweep = a1 > a0 ? 1 : 0;
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} ${sweep} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- poster art ---------- */
+function drawPoster(svg, kind) {
+  const box = svg.getBoundingClientRect();
+  const w = box.width, h = box.height;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = '';
+  if (kind === 'code') {
+    const cx = w * 0.72, cy = h * 0.26;
+    for (let i = 1; i <= 9; i++) el('circle', { cx, cy, r: 16 + i * i * 4.2, fill: 'none', stroke: '#3a1a10', 'stroke-width': 1 }, svg);
+    el('circle', { cx, cy, r: 15, fill: 'none', stroke: '#f2f2ef', 'stroke-width': 2 }, svg);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI * (0.62 + i * 0.07);
+      el('line', { x1: cx + 15 * Math.cos(a), y1: cy + 15 * Math.sin(a), x2: cx + (110 + i * 18) * Math.cos(a), y2: cy + (110 + i * 18) * Math.sin(a), stroke: '#f2f2ef', 'stroke-width': .7, opacity: .8 }, svg);
+    }
+    el('path', { d: arcPath(cx + w * 0.5, cy + h * 0.55, w * 1.05, Math.PI * 1.02, Math.PI * 1.36), fill: 'none', stroke: css('--code'), 'stroke-width': 2.2 }, svg);
+  }
+  if (kind === 'design') {
+    const cx = w * 0.62, cy = h * 0.34;
+    for (let i = 0; i < 5; i++) {
+      el('ellipse', { cx: cx - i * 6, cy: cy + i * 3, rx: w * (0.34 + i * 0.07), ry: h * (0.13 + i * 0.03), fill: 'none', stroke: css('--design'), 'stroke-width': i === 0 ? 1.6 : 1, opacity: 1 - i * 0.16, transform: `rotate(-28 ${cx} ${cy})` }, svg);
+    }
+    el('circle', { cx: cx + w * 0.06, cy: cy - 2, r: 3.5, fill: '#ffb36b' }, svg);
+    for (let i = 0; i < 14; i++) {
+      el('line', { x1: -10, y1: h * 0.1 + i * 26, x2: w + 10, y2: h * 0.1 + i * 26 - w * 0.55, stroke: '#1d1d1d', 'stroke-width': 1 }, svg);
+    }
+  }
+  if (kind === 'read') {
+    const cx = w * 1.15, cy = h * 0.05;
+    const widths = [9, 3, 14, 2, 6, 18, 2, 8, 4, 11];
+    let r = w * 0.48;
+    widths.forEach((sw, i) => {
+      r += sw / 2 + 4;
+      el('ellipse', { cx, cy, rx: r, ry: r * 0.62, fill: 'none', stroke: css('--read'), 'stroke-width': sw, opacity: i === 5 ? 1 : .88, transform: `rotate(-24 ${cx} ${cy})` }, svg);
+      r += sw / 2;
+    });
+    el('path', { d: arcPath(w * 0.2, h * 0.9, w * 0.5, Math.PI * 1.15, Math.PI * 1.5), fill: 'none', stroke: css('--code'), 'stroke-width': 1.2 }, svg);
+  }
+  if (kind === 'eng') {
+    const cx = w * 0.5, cy = h * 0.03, R = w * 0.62;
+    const g = el('g', { opacity: .9 }, svg);
+    for (let i = 1; i < 9; i++) {
+      const ry = R * Math.sin(i / 9 * Math.PI) ;
+      el('ellipse', { cx, cy, rx: R * Math.abs(Math.cos(i / 9 * Math.PI)) + 0.1, ry: R, fill: 'none', stroke: '#8a8a8a', 'stroke-width': .7 }, g);
+      const y = cy - R * Math.cos(i / 9 * Math.PI);
+      el('ellipse', { cx, cy: y, rx: Math.sqrt(Math.max(0, R * R - (y - cy) * (y - cy))), ry: 6, fill: 'none', stroke: '#8a8a8a', 'stroke-width': .7 }, g);
+    }
+    el('circle', { cx, cy, r: R, fill: 'none', stroke: '#f2f2ef', 'stroke-width': 1 }, svg);
+    el('path', { d: arcPath(cx + w * 0.9, cy + h * 0.95, w * 1.25, Math.PI * 1.05, Math.PI * 1.32), fill: 'none', stroke: css('--eng'), 'stroke-width': 2.2 }, svg);
+  }
+}
+
+function drawTunnel() {
+  const svg = document.getElementById('tunnel');
+  svg.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const s = 230 * Math.pow(0.82, i);
+    const x = 250 - s - i * 6, y = 250 - s - i * 9;
+    el('rect', { x, y, width: s, height: s, fill: 'none', stroke: i < 2 ? '#d8d8d8' : '#4a4a4a', 'stroke-width': .8, transform: `skewY(-12) translate(0 ${30})` }, svg);
+  }
+}
+
+/* ---------- hero orbits ---------- */
+const PROGRESS = 0.252;
+let geo = { w: 0, h: 0, cx: 0, cy: 0, r: 0 };
+function heroGeometry() {
+  const hero = document.getElementById('hero');
+  const w = hero.clientWidth, h = hero.clientHeight;
+  const r = Math.min(w * 0.42, h * 0.3);
+  geo = { w, h, r, cx: w - r * 0.42, cy: h * 0.33 };
+  return geo;
+}
+function drawHeroOrbits() {
+  const { w, h, cx, cy, r } = geo;
+  const svg = document.getElementById('heroOrbits');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = '';
+  const rings = [1.22, 1.55, 1.95, 2.45, 3.05, 3.8, 4.7];
+  rings.forEach((k, i) => el('circle', { cx, cy, r: r * k, fill: 'none', stroke: i === 0 ? '#3d3d3d' : '#232323', 'stroke-width': 1 }, svg));
+  const R = r * 1.22;
+  const a0 = Math.PI * 0.62;
+  const a1 = a0 + Math.PI * 2 * PROGRESS;
+  for (let i = 0; i < 4; i++) {
+    const a = a0 + i * Math.PI / 2;
+    el('line', { x1: cx + (R - 6) * Math.cos(a), y1: cy + (R - 6) * Math.sin(a), x2: cx + (R + 6) * Math.cos(a), y2: cy + (R + 6) * Math.sin(a), stroke: '#6a6a6a', 'stroke-width': 1 }, svg);
+  }
+  el('path', { d: arcPath(cx, cy, R, a0, a1), fill: 'none', stroke: css('--code'), 'stroke-width': 2.2, 'stroke-linecap': 'round' }, svg);
+  const sx = cx + R * Math.cos(a1), sy = cy + R * Math.sin(a1);
+  el('circle', { cx: sx, cy: sy, r: 9, fill: 'none', stroke: css('--code'), 'stroke-width': 1, opacity: .5 }, svg);
+  el('circle', { cx: sx, cy: sy, r: 4, fill: '#fff' }, svg);
+  const tag = document.getElementById('shipTag');
+  tag.style.left = sx + 'px'; tag.style.top = sy + 'px';
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI * (0.9 + i * 0.04);
+    el('line', { x1: cx + r * 1.02 * Math.cos(a), y1: cy + r * 1.02 * Math.sin(a), x2: cx + r * (2.2 + i * 0.25) * Math.cos(a), y2: cy + r * (2.2 + i * 0.25) * Math.sin(a), stroke: '#f2f2ef', 'stroke-width': .5, opacity: .35 }, svg);
+  }
+}
+
+function drawAll() {
+  heroGeometry();
+  drawHeroOrbits();
+  document.querySelectorAll('.poster[data-art]').forEach(p => drawPoster(p.querySelector('svg.art'), p.dataset.art));
+  drawTunnel();
+  window.dispatchEvent(new CustomEvent('hero-geometry', { detail: geo }));
+}
+addEventListener('resize', drawAll);
+document.fonts.ready.then(drawAll);
+drawAll();
+
+let remain = 18 * 60 + 42;
+const timerEl = document.getElementById('timer');
+setInterval(() => {
+  remain = Math.max(0, remain - 1);
+  timerEl.textContent = `${String(Math.floor(remain / 60)).padStart(2, '0')}:${String(remain % 60).padStart(2, '0')}`;
+}, 1000);
+</script>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const NOISE = `
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0);
+  const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.0-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=0.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.0*x_);
+  vec4 x=x_*ns.x+ns.yyyy;
+  vec4 y=y_*ns.x+ns.yyyy;
+  vec4 h=1.0-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);
+  vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.0+1.0;
+  vec4 s1=floor(b1)*2.0+1.0;
+  vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+  m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+float fbm(vec3 p, int oct){
+  float f=0.0, a=0.5;
+  for(int i=0;i<7;i++){ if(i>=oct) break; f+=a*snoise(p); p*=2.03; a*=0.5; }
+  return f;
+}
+`;
+
+const canvas = document.getElementById('heroCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 1);
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(0, 1, 0, -1, 1, 6000);
+camera.position.z = 3000;
+
+const monoMat = (seed, craterScale) => new THREE.ShaderMaterial({
+  uniforms: { uLight: { value: new THREE.Vector3(0.62, 0.5, 0.42).normalize() }, uTime: { value: 0 }, uSeed: { value: seed }, uCrater: { value: craterScale } },
+  vertexShader: `
+    varying vec3 vObj; varying vec3 vN;
+    void main(){ vObj = normalize(position); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform vec3 uLight; uniform float uTime; uniform float uSeed; uniform float uCrater;
+    varying vec3 vObj; varying vec3 vN;
+    ${NOISE}
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){
+      vec3 p = vObj + vec3(uSeed);
+      float n = fbm(p * 1.8, 5);
+      float maria = smoothstep(0.0, 0.35, fbm(p * 0.9 + 4.0, 3));
+      float cr = smoothstep(0.82, 0.97, 1.0 - abs(snoise(p * uCrater)));
+      float cr2 = smoothstep(0.86, 0.98, 1.0 - abs(snoise(p * uCrater * 2.7 + 3.0)));
+      float alb = 0.62 + n * 0.32 - maria * 0.2 + cr * 0.12 - cr2 * 0.08;
+      vec3 N = normalize(vN);
+      float ndl = dot(N, uLight);
+      float lit = smoothstep(-0.04, 0.35, ndl) * (0.3 + 0.7 * max(ndl, 0.0));
+      float v = alb * lit;
+      float earthshine = (1.0 - smoothstep(-0.2, 0.05, ndl)) * 0.035 * (0.6 + n);
+      v += earthshine;
+      float g = hash(gl_FragCoord.xy * 0.73 + floor(uTime * 12.0) * 17.0);
+      v += (g - 0.5) * 0.16 * (0.35 + lit);
+      v = pow(clamp(v, 0.0, 1.0), 1.08);
+      gl_FragColor = vec4(vec3(v), 1.0);
+    }`,
+});
+
+const planet = new THREE.Mesh(new THREE.SphereGeometry(1, 192, 128), monoMat(2.7, 5.0));
+const moonA = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), monoMat(8.1, 3.0));
+const moonB = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), monoMat(5.3, 2.4));
+scene.add(planet, moonA, moonB);
+
+/* stars */
+const STAR_N = 900;
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(STAR_N * 3), starSize = new Float32Array(STAR_N);
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+starGeo.setAttribute('aSize', new THREE.BufferAttribute(starSize, 1));
+const starMat = new THREE.ShaderMaterial({
+  uniforms: { uPR: { value: renderer.getPixelRatio() } },
+  vertexShader: `attribute float aSize; uniform float uPR; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uPR; }`,
+  fragmentShader: `void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.1, d); gl_FragColor = vec4(vec3(a * 0.85), 1.0); }`,
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+});
+const stars = new THREE.Points(starGeo, starMat);
+scene.add(stars);
+
+function layout(geo) {
+  const { w, h, cx, cy, r } = geo;
+  renderer.setSize(w, h, false);
+  camera.left = 0; camera.right = w; camera.top = 0; camera.bottom = -h;
+  camera.updateProjectionMatrix();
+  planet.position.set(cx, -cy, 0); planet.scale.setScalar(r);
+  const R = r * 1.55;
+  const aA = Math.PI * 0.95, aB = Math.PI * 0.82;
+  moonA.position.set(cx + R * Math.cos(aA), -(cy + R * Math.sin(aA)), 0); moonA.scale.setScalar(r * 0.075);
+  const R2 = r * 1.95;
+  moonB.position.set(cx + R2 * Math.cos(aB), -(cy + R2 * Math.sin(aB)), 0); moonB.scale.setScalar(r * 0.04);
+  for (let i = 0; i < STAR_N; i++) {
+    starPos[i * 3] = Math.random() * w;
+    starPos[i * 3 + 1] = -Math.random() * h;
+    starPos[i * 3 + 2] = -2000;
+    starSize[i] = Math.random() < 0.04 ? 2.4 : 0.6 + Math.random() * 1.1;
+  }
+  starGeo.attributes.position.needsUpdate = true;
+  starGeo.attributes.aSize.needsUpdate = true;
+}
+const hero = document.getElementById('hero');
+layout({ w: hero.clientWidth, h: hero.clientHeight, ...(() => { const w = hero.clientWidth, h = hero.clientHeight, r = Math.min(w * 0.42, h * 0.3); return { r, cx: w - r * 0.42, cy: h * 0.33 }; })() });
+addEventListener('hero-geometry', e => layout(e.detail));
+
+const clock = new THREE.Clock();
+function frame() {
+  const t = clock.getElapsedTime();
+  planet.rotation.y = t * 0.03;
+  planet.rotation.x = 0.35;
+  moonA.rotation.y = t * 0.05;
+  [planet, moonA, moonB].forEach(m => m.material.uniforms.uTime.value = t);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
