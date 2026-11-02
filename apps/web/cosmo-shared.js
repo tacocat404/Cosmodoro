@@ -98,6 +98,7 @@
   </defs>
     ${['mercury', 'venus', 'earth', 'mars', 'jupiter', 'neptune'].map(k => `<symbol id="pl-${k}" viewBox="0 0 24 24"><rect width="24" height="24" fill="currentColor" mask="url(#pl-m-${k})"/></symbol>`).join('')}
     <symbol id="pl-saturn" viewBox="0 0 24 24"><path d="M3.2 13.4C1.4 11.4 6.6 9.2 12 9.2S22.6 11.4 20.8 13.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/><rect width="24" height="24" fill="currentColor" mask="url(#pl-m-saturn)"/><path d="M3.2 13.4C4.9 15.6 19.1 15.6 20.8 13.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="pl-moon" viewBox="0 0 24 24"><path d="M14.6 4.3a8 8 0 1 0 5.1 13.1A7 7 0 0 1 14.6 4.3Z" fill="currentColor"/></symbol>
     <symbol id="pl-uranus" viewBox="0 0 24 24"><rect width="24" height="24" fill="currentColor" mask="url(#pl-m-uranus)"/><ellipse cx="12" cy="12" rx="3" ry="10.6" transform="rotate(14 12 12)" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".8"/></symbol>
   </svg>`;
   document.body.insertAdjacentHTML('afterbegin', SPRITE);

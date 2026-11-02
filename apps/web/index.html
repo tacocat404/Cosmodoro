@@ -907,6 +907,9 @@ CATS.forEach((c, i) => {
   document.documentElement.style.setProperty(`--c-${c.key}`, p.color);
 });
 const FIRST_TOPIC = CATS[0].key;
+/* 달 · 기타: not a category (no flights, no stats), just a tag for to-dos like plans, outings and errands */
+const ETC = 'etc', tagOf = k => TOPICS[k] || { topic: '기타', planet: 'moon' };
+document.documentElement.style.setProperty('--c-etc', '#a3a7ad');
 /* each destination's lettering, same faces as the arrival poster on the flight page */
 const LETTER = {};
 Object.entries(PL).forEach(([k, p]) => { if (p.letter) LETTER[k] = { text: p.letter.text, css: p.letter.main }; });
@@ -918,7 +921,7 @@ const dayOff = n => { const d = new Date(); d.setDate(d.getDate() + n); return y
 let missions = null;
 try { missions = JSON.parse(localStorage.getItem('cosmodoro.missions')); } catch {}
 if (!Array.isArray(missions)) missions = [];
-missions.forEach(m => { if (!TOPICS[m.topic]) m.topic = FIRST_TOPIC; });
+missions.forEach(m => { if (!TOPICS[m.topic] && m.topic !== ETC) m.topic = FIRST_TOPIC; });
 /* finished items remember when they were finished; older ones than this week stop showing under 완료 */
 missions.forEach(m => { if (m.done && !m.doneAt) m.doneAt = Date.now(); });
 const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); })();
@@ -1742,8 +1745,8 @@ function missionRow(m, i, compact) {
   li.className = 'mitem' + (m.done ? ' done' : '') + (compact ? ' compact' : '') + (goal ? ' goal' : '');
   li.dataset.id = m.id;
   const due = compact || goal ? '' : `<button type="button" class="when${dueClass(m.date)}" title="${m.date ? `마감 ${+m.date.slice(5, 7)}월 ${+m.date.slice(8)}일 · 눌러서 바꾸기` : '마감일 정하기'}">${m.done && m.date ? `${+m.date.slice(5, 7)}.${+m.date.slice(8)}` : dueLabel(m.date)}</button>`;
-  li.innerHTML = `<div class="row">${compact ? '' : `<span class="no">${pad2(i + 1)}</span>`}<span class="box" role="checkbox" aria-checked="${m.done}">${m.done ? '<iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>' : ''}</span><span class="t"></span>${due || (compact ? '' : '<span></span>')}<button class="tp" type="button" aria-label="카테고리 바꾸기 · 지금 ${H(TOPICS[m.topic].topic)}">${planetIcon(m.topic)}${H(TOPICS[m.topic].topic)}</button></div>
-    <div class="re-pick">${Object.keys(TOPICS).map(k => `<button type="button" data-to="${k}" class="${k === m.topic ? 'on' : ''}" style="--c:var(--c-${k})">${planetIcon(k)}${H(TOPICS[k].topic)}</button>`).join('')}</div>
+  li.innerHTML = `<div class="row">${compact ? '' : `<span class="no">${pad2(i + 1)}</span>`}<span class="box" role="checkbox" aria-checked="${m.done}">${m.done ? '<iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>' : ''}</span><span class="t"></span>${due || (compact ? '' : '<span></span>')}<button class="tp" type="button" aria-label="카테고리 바꾸기 · 지금 ${H(tagOf(m.topic).topic)}">${planetIcon(m.topic)}${H(tagOf(m.topic).topic)}</button></div>
+    <div class="re-pick">${[...Object.keys(TOPICS), ETC].map(k => `<button type="button" data-to="${k}" class="${k === m.topic ? 'on' : ''}" style="--c:var(--c-${k})">${planetIcon(k)}${H(tagOf(k).topic)}</button>`).join('')}</div>
     <span class="del-hint" aria-hidden="true"><iconify-icon icon="solar:trash-bin-minimalistic-linear" width="15"></iconify-icon>삭제</span>`;
   li.querySelector('.t').textContent = m.t;
   return li;
@@ -2051,7 +2054,7 @@ $('icalNew').addEventListener('click', () => icalUrl(true));
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 const cal = { y: NOW.getFullYear(), m: NOW.getMonth(), sel: TODAY };
 /* the same solid-cut planet icons as the planet picker, so a day shows where you're flying, not just a colour */
-function planetIcon(t) { return `<svg class="pi" style="color:var(--c-${t})" aria-hidden="true"><use href="#pl-${TOPICS[t].planet}"/></svg>`; }
+function planetIcon(t) { return `<svg class="pi" style="color:var(--c-${t})" aria-hidden="true"><use href="#pl-${tagOf(t).planet}"/></svg>`; }
 function renderCal() {
   $('calMonth').textContent = `${cal.y}. ${pad2(cal.m + 1)}`;
   const first = new Date(cal.y, cal.m, 1), lead = (first.getDay() + 6) % 7;
