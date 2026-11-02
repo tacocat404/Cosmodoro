@@ -1,12 +1,21 @@
 # 인수인계 · Cosmodoro (우주뽀모도로)
 
-다른 세션에서 이어서 작업할 때 이 문서부터 읽어요. 마지막 업데이트: 2026-10-29.
+다른 세션에서 이어서 작업할 때 이 문서부터 읽어요. 마지막 업데이트: 2026-11-02.
+
+> **가장 먼저:** 최신 작업은 `main`이 아니라 **`claude/amazing-ritchie-veoekj` 브랜치**에 있어요(main보다 커밋 20개 이상 앞서요, PR은 아직 없어요).
+> 이어서 할 때는 이 브랜치를 체크아웃해서 작업하고, 사용자가 따로 말하기 전에는 main에 합치지 않아요.
+>
+> ```bash
+> git fetch origin claude/amazing-ritchie-veoekj && git checkout claude/amazing-ritchie-veoekj
+> ```
+>
+> 온라인 확인: https://tacocat404.github.io/Cosmodoro/ (푸시하면 1~2분 뒤 자동 반영, 아래 2장)
 
 ## 1. 지금 어디까지 왔나
 
 - **단계:** 디자인 초안 단계예요. 실제 개발(`apps/`, `server/`)은 아직 시작하지 않았어요.
 - **사용자 결정:** 로그인·캘린더를 초안에 넣고 디자인을 다듬은 뒤 개발로 넘어가요. 계획은 [PLAN.md](PLAN.md)에 있어요.
-- **레포:** https://github.com/tacocat404/Cosmodoro (`main`)
+- **레포:** https://github.com/tacocat404/Cosmodoro (저장소 이름은 대문자 `Cosmodoro`예요. Pages 주소도 대소문자를 구분해요)
 - **최신 초안:** `design/drafts/v6-main.html`(메인), `design/drafts/v6-flight.html`(비행·태양계), 2026-11-01
 - **v6를 만든 이유:** 선배들이 비행 중 행성 3D 에셋, 우주 배경, 항해 연출이 "깬다"고 했어요. 조사 결과는 `design/research/우주 비행 장면 몰입감 개선.md`에 있어요.
 - **롤백용 시안:** v2~v5, A~C, `backup-*` 폴더예요. 건드리지 않아요. v5-flight도 그대로 남아 있어요.
@@ -17,9 +26,12 @@
 python -m http.server 5520
 ```
 
-- 프로젝트 루트에서 실행해요.
+- 프로젝트 루트에서 실행해요(Mac에서 `python`이 없으면 `python3`). 끌 때는 Ctrl+C.
 - 메인: http://localhost:5520/design/drafts/v6-main.html (이전 버전은 `v5-main.html`)
-- 온라인: https://tacocat404.github.io/Cosmodoro/ — `design/drafts/`를 바꾼 푸시(main 또는 `claude/**` 브랜치)마다 GitHub Actions가 `gh-pages`로 다시 올려요. 가장 마지막에 푸시한 브랜치가 보여요. 버전은 `/version.txt`.
+- 온라인: https://tacocat404.github.io/Cosmodoro/ (메인 `v6-main.html`, 비행 `v6-flight.html?topic=code&min=25`, 태양계 `v6-flight.html?mode=atlas`)
+  - `design/drafts/`를 바꾼 푸시(main 또는 `claude/**` 브랜치)마다 `.github/workflows/drafts-pages.yml`이 `design/drafts`를 `gh-pages` 브랜치로 다시 올려요. 가장 마지막에 푸시한 브랜치가 보여요.
+  - 올라간 버전은 `/version.txt`(브랜치 @ 커밋). 배포 확인은 `https://api.github.com/repos/tacocat404/cosmodoro/actions/runs?per_page=2`나 `https://raw.githubusercontent.com/tacocat404/Cosmodoro/gh-pages/version.txt`로 해요(클라우드 세션에서는 github.io 접속이 막혀 있어요).
+  - 사용자에게는 "Ctrl+Shift+R로 새로고침"을 같이 안내해요(캐시).
 - 태양계: http://localhost:5520/design/drafts/v6-flight.html?mode=atlas (v5는 `v5-flight.html?mode=atlas`)
 - 비행: `v6-flight.html?topic=code&min=25`로 열어요. `v6-main`의 "발사"·"새 행성" 버튼이 v6 비행으로 가고, v6 비행의 귀환 버튼은 `v6-main`으로 돌아와요. `v5-main`↔`v5-flight`는 예전 그대로 짝이에요.
 - v6는 `assets/`의 텍스처를 불러와서 `file://`로는 안 열려요. 꼭 로컬 서버로 열어요.
@@ -36,7 +48,9 @@ python -m http.server 5520
 | `design/drafts/v6-flight.html` | 비행·태양계 개선안. UI는 v5와 같고 3D 장면만 새로 짰어요 |
 | `design/drafts/assets/` | v6가 쓰는 실제 행성 지도, 은하수, 별 목록(약 13MB). 출처와 라이선스는 `assets/CREDITS.md` |
 | `design/drafts/brand/` | 로고와 파비콘 |
-| `design/research/` | 디자인 조사 보고서 |
+| `design/research/` | 디자인 조사 보고서, 전후 비교 이미지(`compare-v5-v6/`, `main-real-maps/`, `flight-missions/`, `system-switch-seq.jpg`) |
+| `design/tools/` | 클라우드 세션용 헤드리스 렌더 스크립트(`shoot.js`, 사용법은 그 폴더 README) |
+| `.github/workflows/drafts-pages.yml` | 초안을 GitHub Pages(`gh-pages`)로 자동 배포 |
 
 `cosmo-shared.js`에 들어 있는 것:
 - **`PLANETS`:** 8개 행성의 이름, 색, 레터링, 티켓, 비행 거리, 설명, 통계(NASA NSSDC 수치)
@@ -121,7 +135,7 @@ python -m http.server 5520
   - Neutral 톤매핑의 어두운 끝(toe)을 1/4로 줄여 희미한 별을 살렸어요.
 - **빛:** 조명은 태양 하나뿐이에요(함선 전용 1024 그림자). 가까운 행성이 있을 때만 그 색의 반사광이 들어와요.
   - 실내 반사 맵(RoomEnvironment)과 카메라 보조광은 뺐어요.
-  - 비행 중 태양은 진행 방향과 약 95° 각도(호만 궤도와 비슷)로 고정해서, 우주선은 옆에서 빛을 받고 목적지는 반쯤 찬 모습으로 보여요.
+  - 태양과 지구는 지도와 같은 실제 방향에 있어요(출발 때 태양은 진행 방향의 약 67°, 도착 때 약 116°). 추격 카메라는 늘 태양 쪽에 붙어서 우주선이 밝게 보여요(2026-11-01, 아래 전환 항목).
 - **스케일:** 먼 천체는 지도 방향은 그대로 두고 실제 각크기로 카메라 주변에 배치해요("스테이징").
   - 목적지는 점(0.04°)에서 시작해 일정한 배율로 커져 도착 때 약 48°가 돼요.
   - 지구는 40°에서 점으로 작아지고, 태양은 실제 0.53°의 1.8배로 그려요.
@@ -137,15 +151,9 @@ python -m http.server 5520
 - **렌더:** 원경(하늘·태양·행성)과 함선을 두 패스로 나눠 그려요(깊이만 지움). 디버그용으로 `window.cosmodoro`에 `EXPO`, `orientSky`, `skyU`, `ready`를 더 열어 뒀어요.
 - **결정됨 (2026-10-30):** 세션마다 실제 데이터 약 5MB를 받고, '창밖 오러리' 대신 정직한 카메라로 가요(태양계 지도는 V 키). 순항은 B안(망원 카메라 창)이에요.
 
-## 6. 사용자 취향 (꼭 지켜요)
+### 2026-11-01 이후 바뀐 것 (최신이 아래)
 
-- **언어:** 답은 한국어로 해요.
-- **화면:** 차분한 UI로, 정보를 너무 많이 넣지 않고(TMI 금지), 우주의 웅장함은 살려요.
-- **시안 먼저:** 디자인 선택지는 먼저 시각화(여러 시안)로 보여 주고, 사용자가 고르면 진행해요.
-- **백업:** 큰 수정 전에는 롤백할 수 있게 백업해요. 이제는 git 커밋으로 대신해도 돼요.
-- **통계 색:** 행성마다 색이 고르게 보여야 해요. 한 색(특히 주황)만 튀면 안 돼요.
-
-### 2026-11-01: 메인 행성 실제 지도 + KTX2
+#### 메인 행성 실제 지도 + KTX2
 
 - **메인 페이지(`v6-main.html`, v5 메인을 복사해 만들었어요) 행성:** 절차 생성 표면 대신 비행 화면과 같은 실제 지도(1k)를 써요.
   - 인쇄 질감 셰이더는 그대로예요. 지도에서 밝기만 읽어 잉크 톤으로 찍어요(`MAPS`의 `lo/hi`는 지도별 밝기 2~98% 구간).
@@ -158,7 +166,7 @@ python -m http.server 5520
   - 토성 고리는 8192×500 PNG 대신 같은 내용을 8192×4로 줄인 `saturn_ring_8k_strip.png`를 써요(셰이더가 가운데 한 줄만 읽어요).
   - 다시 만들 때: npm `ktx2-encoder@0.6.0` + `sharp`로 `{ isUASTC:false, generateMipmap:true, isYFlip:true, qualityLevel:200 }`(색 지도는 sRGB, `earth_bump_rough_clouds`는 선형·품질 255).
 
-### 2026-11-01: 비행 중 미션 목록 (시안 A, HUD 인라인 확장)
+#### 비행 중 미션 목록 (시안 A, HUD 인라인 확장)
 
 - 지금 미션 아래 `화성 미션 N ▾ M` 버튼이나 **M 키**로 이 행성 미션만 펼쳐요. 카드 없이 HUD 글자가 아래로 이어지고 얇은 세로선만 있어요. Esc·M·바깥 클릭으로 닫혀요.
 - 목록에서 할 수 있는 것: 번호를 눌러 완료(다시 누르면 취소), 마우스를 올리면 나오는 `바꾸기`로 지금 미션 바꾸기, 맨 아래 칸에 적고 Enter로 미션 추가.
@@ -167,7 +175,7 @@ python -m http.server 5520
 - 목록이나 다음 안내가 열려 있는 동안은 HUD가 흐려지지 않아요(`calm` 안 걸림), 목록 위 드래그는 카메라를 돌리지 않아요.
 - 시안 4종 캔버스: https://claude.ai/artifact/RGcYFSYhCkUDUy2w6zW2ph (A 채택)
 
-### 2026-11-01: 태양계 시점 전환 (V) — 제자리 줌아웃
+#### 태양계 시점 전환 (V) — 제자리 줌아웃
 
 - 예전에는 비행 장면(행성을 카메라 둘레에 실제 시직경으로 배치)과 태양계 지도(궤도 자리, 크게 부풀림)를 그냥 섞어서, 행성이 화면을 가로질러 날아오고 카메라도 큰 호를 그렸어요.
 - 이제는 두 동작이에요: ① 크레인 숏 — 카메라가 같은 방향을 유지한 채 위로 들리며 우주선에서 뒤로 빠져요(거리는 기하급수, 우주선은 화면 가운데). ② 한 번의 큰 호 — 지도 각도로 돌아가며 시선이 우주선에서 태양으로 옮겨가요.
@@ -179,37 +187,58 @@ python -m http.server 5520
   - 그래서 추격 카메라는 항상 태양 쪽에 붙어요(`side`). 태양이 경로의 어느 편에 있느냐에 따라 화면 구도가 좌우로 뒤집혀요.
   - 궤도 간격은 전환 앞쪽 40%(`eg`) 안에 정리되고, 소행성대·비행 경로·우주선 표시는 카메라가 우주선에서 벗어난 뒤(`eo`) 나타나요. 망원 창은 전환이 시작되면 바로 사라져요.
 
-### 2026-11-01: 지구 페이드 인 (태양은 원래대로)
+#### 지구 페이드 인 (태양은 원래대로)
 
 - 태양계 시점에서 돌아올 때 비행용 지구가 크기 변화 없이 어둠에서 서서히 밝아져요(`uFade`, 대기·달 포함). 나갈 때는 바로 빠져요.
 - 태양을 별 모양 빛줄기 스프라이트로 바꿔 봤지만 사용자 요청으로 원래 태양(HDR 원반 + bloom + 원형 glare)으로 되돌렸어요. 알려진 문제: bloom 때문에 태양 후광이 네모나게 보일 수 있어요.
 
-### 2026-11-01: 천왕성 고리, 우주선 밝기
+#### 천왕성 고리, 우주선 밝기
 
 - 천왕성(`PLANETS.uranus.thinRings`)에 가는 고리 9개를 그려요. 반지름은 천왕성 반지름 기준 6·5·4·α·β·η·γ·δ·ε 고리(1.64~2.00배)이고, 가장 넓고 밝은 ε 고리가 바깥쪽이에요. 적도면에 있어서 98° 기울기 때문에 거의 세로로 서요. 고리가 1픽셀보다 얇아도 최소 1픽셀로 그리고 밝기를 나눠서 깜빡이지 않아요.
 - 우주선 그늘 쪽 보조광(hemisphere)을 0.03에서 0.45로 올렸어요.
 
-### 2026-11-01: 태양계 지도(카테고리 지정) 화면 버그
+#### 태양계 지도(카테고리 지정) 화면 버그
 
 - 3·2·1 카운트다운이 잠깐 보이던 문제: `?mode=atlas`를 `<head>`의 작은 스크립트가 먼저 읽어 `html.atlas`를 붙여요. 모듈 스크립트가 늦게 떠도 카운트다운·비행 HUD는 첫 화면부터 숨겨지고 검은 막(veil)이 덮어요.
 - 돌아가기/태양계 버튼이 안 눌리던 문제: 비행 HUD의 위쪽 띠(`.top`)가 화면 폭 전체를 덮어 버튼 위에 있었어요. 태양계 화면에서는 `.top`이 클릭을 받지 않게 했어요(`pointer-events: none`).
 - 태양계 화면에서는 우주 배경음(hum)을 켜지 않아요.
 
-## 7. 테스트 팁 (Claude 브라우저 패널)
+## 6. 사용자 취향 (꼭 지켜요)
+
+- **언어:** 답은 한국어로 해요.
+- **화면:** 차분한 UI로, 정보를 너무 많이 넣지 않고(TMI 금지), 우주의 웅장함은 살려요.
+- **설명:** 짧고 쉽게(ELI5) 먼저, 자세한 건 물어볼 때. 아닌 건 분명히 "아니에요"라고 말해요.
+- **시안 먼저:** 디자인 선택지는 먼저 시각화(여러 시안)로 보여 주고, 사용자가 고르면 진행해요. "그림으로 보여줘"는 실제 화면 위 렌더 이미지나 Design 캔버스로 보여 줘요.
+- **요청한 것만 바꿔요.** 요청 밖의 연출(밝기·크기·모양)을 같이 바꾸면 싫어해요. 특히 태양: 직접 바꿨다가 "이상한 동그라미"라고 되돌렸어요. 바꾸기 전에 지금 모습을 확인하고, 크게 바꿀 땐 시안부터.
+- **되돌리라고 하면** 해당 커밋을 `git revert`로 되돌리고, 함께 들어 있던 다른 수정이 있으면 그걸 다시 살릴지 물어보거나 따로 다시 적용해요.
+- **이전에 고친 걸 다시 깨지 않게** 해요. 예: 전환 중 "크기 줄어듦/날아옴"은 한 번 고친 문제라, 관련 코드를 만질 때 전환 시퀀스를 다시 찍어 확인해요.
+- **확인 방식:** 고친 뒤 렌더 이미지로 확인하고, 필요하면 전후 비교 그림을 보내요. 확인 못 한 것(실제 GPU 성능, 소리 등)은 못 했다고 말해요.
+- **백업:** 큰 수정 전에는 롤백할 수 있게 백업해요. 이제는 git 커밋으로 대신해도 돼요.
+- **통계 색:** 행성마다 색이 고르게 보여야 해요. 한 색(특히 주황)만 튀면 안 돼요.
+
+## 7. 테스트 팁
 
 - 패널이 숨겨져 있으면 rAF와 CSS 전환이 멈춰요.
   - 비행 페이지는 `window.cosmodoro.step(1/30)`을 반복해서 화면을 진행해요.
   - CSS 애니메이션은 `document.getAnimations().forEach(a=>{try{a.finish()}catch(e){}})`로 끝내요.
 - 스크린샷이 예전 화면으로 나올 때가 많아요. 창 크기를 바꾸면(예: 1400x875 ↔ 1440x900) 새로 그려져요. 끝나면 desktop으로 되돌려요.
-- 비행 페이지 디버그용으로 `window.cosmodoro`에 `AT`, `focusPlanet`, `unfocus`, `bodies`, `camera`, `step`을 열어 뒀어요.
+- 비행 페이지 디버그용으로 `window.cosmodoro`에 `AT`, `F`, `setView`, `focusPlanet`, `unfocus`, `bodies`, `camera`, `EXPO`, `step`, `ready`를 열어 뒀어요. 메인은 `window.cosmodoro.setTopic(key)`, `openPass()`.
 - **클라우드 세션(브라우저 패널 없음):** jsDelivr CDN이 막혀 있을 수 있어요.
-  - npm으로 `three@0.167.0`을 받고, Playwright `route`로 CDN 주소를 로컬 파일에 연결해요. Chromium은 `--use-angle=swiftshader --enable-unsafe-swiftshader`로 띄워요.
+  - `design/tools/shoot.js`를 써요(README 참고). three.js를 로컬로 돌리고 SwiftShader로 찍어요. 한 장에 30~60초.
+  - 전환(V) 중간을 확인할 땐 `F.m`을 매 프레임 고정해서 0~100%를 10% 간격으로 찍어 한 장으로 붙여 봐요.
   - v6는 텍스처를 다 받으면 `window.cosmodoro.ready`가 true가 돼요. 그 뒤에 `F.started/F.elapsed/F.clock`을 직접 넣어 원하는 순간을 찍어요.
 - 콘솔에 남는 오래된 오류는 무시해도 돼요.
   - `setPointerCapture NotFoundError`는 예전 테스트 흔적이에요.
   - `Transition was skipped`는 페이지를 이동할 때 나와요.
 
-## 8. 다음 할 일 후보
+## 8. 알려진 문제
+
+- **태양 후광이 네모나게 보일 수 있어요.** 태양 원반(HDR 최대 16)이 bloom의 저해상도 단계에서 네모 블록으로 번져서예요. 두 번 고쳐 봤지만(①원반을 bloom 문턱 아래로 낮춤 ②별 모양 빛줄기 스프라이트) 사용자가 둘 다 되돌렸어요. 다시 손댈 땐 반드시 시안부터 보여 줘요. 후보: bloom을 풀해상도로, 태양만 따로 블러한 둥근 글로우 패스.
+- 실제 GPU 성능(프레임 시간, 메모리)은 아직 안 쟀어요.
+- 공유용 비교 아티팩트(https://claude.ai/artifact/J1Bg2xhQ9X2hh2PPtW4gx6)의 비행 데모는 2026-11-01 초 버전이에요. 이제는 GitHub Pages 링크로 보여 주는 게 맞아요.
+- Design 캔버스(미션 컴포넌트 시안): https://claude.ai/artifact/RGcYFSYhCkUDUy2w6zW2ph
+
+## 9. 다음 할 일 후보
 
 1. 사용자 피드백을 받으며 초안 디자인을 계속 다듬어요.
    - 성능: 실제 노트북(내장 그래픽)에서 v6 비행 화면의 프레임 시간과 GPU 메모리를 재요. 클라우드에서는 소프트웨어 렌더로만 확인했어요.

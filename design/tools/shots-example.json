@@ -1,0 +1,12 @@
+[
+  { "name": "cruise", "url": "design/drafts/v6-flight.html?topic=code&min=25", "w": 1440, "h": 900, "frames": 40,
+    "setup": "const c=window.cosmodoro; c.F.started=true; c.F.speed=0; c.F.elapsed=c.F.total*0.3; c.F.clock=200; document.getElementById('countdown').classList.add('off');" },
+  { "name": "system", "url": "design/drafts/v6-flight.html?topic=code&min=25", "w": 1440, "h": 900, "frames": 40,
+    "setup": "const c=window.cosmodoro; c.F.started=true; c.F.speed=0; c.F.elapsed=c.F.total*0.5; c.F.clock=200; c.setView('system'); c.F.m=1;" },
+  { "name": "switch_50", "url": "design/drafts/v6-flight.html?topic=code&min=25", "w": 1280, "h": 720, "frames": 10, "hideUI": true,
+    "setup": "const c=window.cosmodoro; c.F.started=true; c.F.speed=0; c.F.elapsed=c.F.total*0.43; c.F.clock=200; c.setView('system'); (function pin(){ c.F.m=0.5; requestAnimationFrame(pin); })();" },
+  { "name": "atlas_saturn", "url": "design/drafts/v6-flight.html?mode=atlas", "w": 1440, "h": 900, "frames": 40,
+    "setup": "const c=window.cosmodoro; c.F.m=1; c.focusPlanet('saturn'); c.AT.f=0.999;" },
+  { "name": "main_read", "url": "design/drafts/v6-main.html", "w": 1440, "h": 900, "frames": 60,
+    "setup": "window.cosmodoro.setTopic('read')" }
+]
