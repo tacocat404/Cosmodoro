@@ -19,15 +19,25 @@ design/            디자인 초안 (개발 코드와 분리)
   research/        디자인 조사 보고서와 노트
 docs/
   PLAN.md          개발 계획
-
-(개발 시작 후 추가될 자리)
-apps/web           웹 (Vite) — 초안을 옮겨 와요
-apps/native        PC·안드로이드 앱 (Tauri 2)
-server             API 서버 (Node.js + Hono + PostgreSQL + Drizzle + Better Auth)
-packages/shared    웹·앱·서버 공용 타입과 동기화 로직
+  CHECKLIST.md     단계별 진행 상황
+apps/web/          웹 앱 (v6 초안을 옮김, 빌드 없음)
+  index.html       메인 · flight.html 비행/태양계
+  sync.js          이 기기 ↔ 계정 동기화
+server/            서버 (Node.js + Hono + Better Auth + node:sqlite), 웹 페이지도 같이 내보내요
+Dockerfile         배포용 컨테이너 하나
 ```
 
-`design/`은 디자인을 고르고 다듬는 공간이고, 실제 개발 코드는 `apps/`·`server/`·`packages/`에만 둬요. 두 쪽이 섞이지 않아요.
+`design/`은 디자인을 고르고 다듬는 공간이고, 실제 개발 코드는 `apps/`·`server/`에만 둬요. 두 쪽이 섞이지 않아요.
+
+## 앱 실행 (개발)
+
+Node.js 24 이상이 필요해요.
+
+```bash
+cd server && npm install && npm run dev
+```
+
+http://localhost:8787 을 열어요. 테스트는 `cd server && npm test`예요.
 
 ## 초안 보기
 

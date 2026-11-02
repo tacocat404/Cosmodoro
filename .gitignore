@@ -17,3 +17,8 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/settings.local.json
+
+# app data
+*.db
+*.db-shm
+*.db-wal
