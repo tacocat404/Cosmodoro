@@ -2,11 +2,10 @@
 
 다른 세션에서 이어서 작업할 때 이 문서부터 읽어요. 마지막 업데이트: 2026-11-02.
 
-> **가장 먼저:** 최신 작업은 `main`이 아니라 **`claude/amazing-ritchie-veoekj` 브랜치**에 있어요(main보다 커밋 20개 이상 앞서요, PR은 아직 없어요).
-> 이어서 할 때는 이 브랜치를 체크아웃해서 작업하고, 사용자가 따로 말하기 전에는 main에 합치지 않아요.
+> **가장 먼저:** 최신 작업은 **`main`**에 있어요. 2026-11-02에 `claude/amazing-ritchie-veoekj` 브랜치를 main으로 합쳤어요(fast-forward). 이제부터 main에서 이어서 작업해요.
 >
 > ```bash
-> git fetch origin claude/amazing-ritchie-veoekj && git checkout claude/amazing-ritchie-veoekj
+> git checkout main && git pull
 > ```
 >
 > 온라인 확인: https://tacocat404.github.io/Cosmodoro/ (푸시하면 1~2분 뒤 자동 반영, 아래 2장)
