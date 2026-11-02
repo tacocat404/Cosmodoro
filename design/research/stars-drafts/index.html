@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>별로 보내기 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root { --bg: #000; --ink: #f2f2ef; --ink-2: rgba(242,242,239,.62); --ink-3: rgba(242,242,239,.4); --line: rgba(255,255,255,.12); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Pretendard Variable", sans-serif; }
+  main { max-width: 1480px; margin: 0 auto; padding: 56px 24px 96px; }
+  header small { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: .2em; color: var(--ink-3); }
+  h1 { margin: 10px 0 8px; font-size: 30px; font-weight: 600; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--ink-3); font-size: 14px; }
+  section { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h2 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  section > p { margin: 0 0 22px; color: var(--ink-2); font-size: 14px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  figure { margin: 0; }
+  img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+  figcaption { margin-top: 12px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+  figcaption b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+  .rec { display: inline-block; margin-left: 6px; padding: 1px 8px; border: 1px solid var(--ink-3); border-radius: 999px; font-size: 11px; color: var(--ink); }
+  @media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <small>DRAFT · 별로 보내기</small>
+    <h1>끝난 과목은 하늘의 별로</h1>
+    <p>태양계 화면 실제 렌더 · 기존 버튼·이름표·목록 스타일만 사용 · 예시 과목 3개(미적분학 42시간, 일반물리학 32시간, 대학 글쓰기 12시간)</p>
+  </header>
+
+  <section>
+    <h2>① 별로 보내기 · 행성 확대 화면</h2>
+    <p>누르면 행성에서 빛 한 점이 하늘로 올라가 별이 돼요(움직임은 고른 뒤 만들어요).</p>
+    <div class="pair">
+      <figure><img src="1A.png" alt="A안: 떼기 대신 별로 보내기"><figcaption><b>A</b>"떼기"를 "별로 보내기"로 바꿔요. 두 번 눌러 확인하는 건 그대로예요. 데이터는 원래 안 지우니 버튼 하나면 돼요.<span class="rec">추천</span></figcaption></figure>
+      <figure><img src="1B.png" alt="B안: 떼기를 누르면 두 갈래"><figcaption><b>B</b>"떼기"를 누르면 "별로 보내기 / 그냥 떼기 / 취소"로 갈라져요. 고를 게 하나 늘어요.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>② 하늘의 내 별</h2>
+    <p>왼쪽 위 하늘 한 구역에 차례로 떠요. 오래 공부한 과목일수록 밝고, 옅은 점선으로 이어져 "내 별자리"가 돼요. 마우스를 올린 모습이에요.</p>
+    <div class="pair">
+      <figure><img src="2A.png" alt="A안: 이름표만"><figcaption><b>A</b>행성 이름표와 같은 모양으로 과목 이름과 집중한 시간만 떠요.</figcaption></figure>
+      <figure><img src="2B.png" alt="B안: 이름표와 옅은 링"><figcaption><b>B</b>A에 더해 별 둘레에 옅은 링이 생겨서, 누를 수 있는 별이라는 게 보여요.<span class="rec">추천</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>③ 별 목록과 불러오기</h2>
+    <p>오른쪽 위 "✦ 별 3" 버튼(돌아가기와 같은 모양)을 누르면 비행 중 미션 목록처럼 카드 없이 펼쳐져요.</p>
+    <div class="pair">
+      <figure><img src="3A.png" alt="A안: 목록에서 별로 이동, 별에서 불러오기"><figcaption><b>A</b>줄을 누르면 그 별이 강조되고, 불러오기는 별 이름표 아래에 있어요. 목록이 아주 단순해요.</figcaption></figure>
+      <figure><img src="3B.png" alt="B안: 목록에서 바로 불러오기"><figcaption><b>B</b>목록에서 바로 불러와요. 원래 행성이 차 있으면 그 자리에서 빈 행성을 골라요. 어차피 필요한 선택이라 한곳에 모았어요.<span class="rec">추천</span></figcaption></figure>
+    </div>
+  </section>
+</main>
+</body>
+</html>
