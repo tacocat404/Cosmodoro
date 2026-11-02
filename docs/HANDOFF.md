@@ -12,8 +12,8 @@
 
 ## 1. 지금 어디까지 왔나
 
-- **단계:** 개발 중이에요(2026-11-02 시작). 0~4단계와 보안 점검은 끝났고, 배포(5단계)는 호스팅을 정하면 진행해요. 진행 상황과 결정은 [CHECKLIST.md](CHECKLIST.md)에 있어요.
-  - 앱: `apps/web/`(v6 초안을 그대로 옮김, 빌드 없음) + `server/`(Hono + Better Auth + `node:sqlite`). 실행은 `cd server && npm install && npm run dev` → http://localhost:8787, 브라우저 패널에서는 `preview_start {name:"app"}`.
+- **단계:** 개발 중이에요(2026-11-02 시작). 0~5단계(배포까지) 끝났어요. 주소는 https://cosmodoro-five.vercel.app 이고, main에 푸시하면 Vercel이 자동으로 배포해요(Neon DB, 싱가포르). 진행 상황과 결정은 [CHECKLIST.md](CHECKLIST.md)에 있어요.
+  - 앱: `apps/web/`(v6 초안을 그대로 옮김, 빌드 없음) + `server/`(Hono + Better Auth, 배포는 Neon Postgres·로컬은 `node:sqlite`) + `api/index.js`(Vercel 진입점). 실행은 루트에서 `npm install && npm run dev` → http://localhost:8787, 브라우저 패널에서는 `preview_start {name:"app"}`.
   - **디자인을 고칠 때:** 초안(`design/drafts/v6-*`)과 앱(`apps/web/`)이 이제 따로예요. 앱에 반영할 건 `apps/web/`을 고쳐요.
   - 사용자는 ponytail 방식(가장 단순하게, 필요할 때 더하기)으로 개발하길 원해요.
 - **사용자 결정:** 로그인·캘린더를 초안에 넣고 디자인을 다듬은 뒤 개발로 넘어가요. 계획은 [PLAN.md](PLAN.md)에 있어요.

@@ -10,7 +10,7 @@ PLAN.md보다 도구를 줄였어요. 필요해지면 그때 더해요.
 | PLAN.md | 실제 | 이유 |
 |---|---|---|
 | Vite | 없음. 초안 HTML을 그대로 서버가 내보내요 | 초안이 빌드 없이 돌아가요 |
-| PostgreSQL + PGlite + Drizzle | Node 내장 `node:sqlite` 파일 하나 | DB 서버를 따로 안 띄워도 돼요. 사용자가 많아지면 Postgres로 옮겨요 |
+| PostgreSQL + PGlite + Drizzle | 배포: Neon(Postgres), 로컬: Node 내장 `node:sqlite` 파일. ORM 없이 같은 SQL | `DATABASE_URL`이 있으면 Postgres, 없으면 SQLite |
 | 테이블별 동기화 | 사용자마다 JSON 문서 하나(`user_data`) | 데이터가 작아요. 비행 기록은 합치고, 나머지는 나중에 올린 쪽이 이겨요 |
 | IndexedDB | localStorage 그대로 | 초안 코드가 전부 localStorage라서요 |
 | packages/shared | 없음 | 같이 쓸 코드가 아직 없어요 |
@@ -73,13 +73,19 @@ PLAN.md보다 도구를 줄였어요. 필요해지면 그때 더해요.
 - [-] CSP: 초안 HTML 안에 스크립트가 들어 있어서 지금 켜면 효과가 적어요. 스크립트를 파일로 빼면 켜요
 - 테스트: `cd server && npm test` (4개)
 
-## 5단계 · 배포
+## 5단계 · 배포 (Vercel + Neon, 2026-11-02)
 
-- [x] `Dockerfile` 하나(웹 + 서버), SQLite 파일은 `/data`
-- [ ] 호스팅 정하기(사용자 계정 필요)
-- [ ] 환경 변수: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`(공개 주소), `IP_HEADER`
-- [ ] `/data`에 볼륨 붙이기, 백업
-- [ ] 배포 주소에서 가입 → 비행 → 통계 → 다른 기기 동기화 확인
+**주소: https://cosmodoro-five.vercel.app**
+
+- [x] 호스팅: Railway는 신규 가입이 막혀 있어서 Vercel(Hobby, 비상업용 무료) + Neon(무료 Postgres)으로
+- [x] `api/index.js`(모든 `/api` 요청), `vercel.json`(웹은 `apps/web`을 그대로, 함수 지역 `sin1` = DB와 같은 싱가포르)
+- [x] GitHub 연결: main에 푸시하면 자동 배포
+- [x] 환경 변수: `BETTER_AUTH_SECRET`(Secret), `IP_HEADER=x-real-ip`, Neon이 넣은 `DATABASE_URL`. 공개 주소는 Vercel의 `VERCEL_PROJECT_PRODUCTION_URL`을 써요(도메인을 바꿔도 따라가요)
+- [x] 로그인 시도 제한을 DB에 저장(서버 함수끼리 메모리를 공유하지 않아서). 실제 주소에서 3번 틀리면 429 확인
+- [x] 실제 주소 확인: 메인·비행 페이지·행성 지도 200, 로그인 없이 동기화 401, 다른 사이트 폼 403, 서버 파일 404, 보안 헤더
+- [ ] 실제 주소에서 사용자가 직접 가입 → 비행 → 통계 → 다른 기기 동기화 확인
+- [-] DB 백업: Neon 무료 요금제의 기본 복구 기간에 맡겨요. 중요한 데이터가 쌓이면 정기 백업을 붙여요
+- [-] 상업용으로 쓰게 되면 Vercel Pro로 올려야 해요(Hobby는 비상업용)
 
 ## 나중 (이번 범위 밖)
 
