@@ -1,5 +1,5 @@
 /* Cosmodoro server: the web pages (apps/web), sign-in (Better Auth) and one JSON document per user that every
-   device syncs with. One SQLite file (node:sqlite), so there's no database server to run. */
+   device syncs with. Locally one SQLite file (node:sqlite); on Vercel, Postgres (Neon) through DATABASE_URL. */
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { bodyLimit } from 'hono/body-limit';
@@ -8,40 +8,54 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { betterAuth } from 'better-auth';
 import { getMigrations } from 'better-auth/db/migration';
 import { DatabaseSync } from 'node:sqlite';
+import pg from 'pg';
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 
 const WEB = resolve(import.meta.dirname, '../../apps/web');
 const env = process.env;
 
-export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseURL = env.BETTER_AUTH_URL || 'http://localhost:8787' } = {}) {
-  if (env.NODE_ENV === 'production' && !env.BETTER_AUTH_SECRET) throw new Error('BETTER_AUTH_SECRET is required in production');
+/* Postgres when DATABASE_URL is set (serverless hosts keep no files), else a SQLite file. Same SQL for both: `?`
+   placeholders become $1, $2 … for Postgres */
+function openDb(dbPath) {
+  if (env.DATABASE_URL) {
+    const pool = new pg.Pool({ connectionString: env.DATABASE_URL, max: 3 });
+    const run = (sql, p) => { let i = 0; return pool.query(sql.replace(/\?/g, () => `$${++i}`), p); };
+    return { raw: pool, run, get: async (sql, p) => (await run(sql, p)).rows[0] };
+  }
   const db = new DatabaseSync(dbPath);
   db.exec('PRAGMA journal_mode = WAL');
+  return { raw: db, run: async (sql, p = []) => db.prepare(sql).run(...p), get: async (sql, p = []) => db.prepare(sql).get(...p) };
+}
+
+export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseURL = env.BETTER_AUTH_URL || 'http://localhost:8787' } = {}) {
+  if (env.NODE_ENV === 'production' && !env.BETTER_AUTH_SECRET) throw new Error('BETTER_AUTH_SECRET is required in production');
+  const db = openDb(dbPath);
   const auth = betterAuth({
-    database: db,
+    database: db.raw,
     baseURL,
     secret: env.BETTER_AUTH_SECRET,
     emailAndPassword: { enabled: true, minPasswordLength: 8 },
     socialProviders: env.GOOGLE_CLIENT_ID ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } } : {},
-    rateLimit: { enabled: true },
+    /* counts live in the database: serverless instances don't share memory */
+    rateLimit: { enabled: true, storage: 'database' },
     /* behind the host's proxy the client IP comes in a header (e.g. fly-client-ip); without it every visitor shares one
        rate-limit bucket */
     advanced: env.IP_HEADER ? { ipAddress: { ipAddressHeaders: [env.IP_HEADER] } } : {},
   });
+  /* ponytail: checks the schema on every cold start (a few queries); move to a deploy step if start-up time matters */
   await (await getMigrations(auth.options)).runMigrations();
-  db.exec(`CREATE TABLE IF NOT EXISTS user_data (
-    user_id TEXT PRIMARY KEY REFERENCES user(id) ON DELETE CASCADE,
+  await db.run(`CREATE TABLE IF NOT EXISTS user_data (
+    user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
     data TEXT NOT NULL DEFAULT '{}',
     ical TEXT UNIQUE,
-    updated_at INTEGER NOT NULL DEFAULT 0
+    updated_at BIGINT NOT NULL DEFAULT 0
   )`);
-  const getRow = db.prepare('SELECT data, ical FROM user_data WHERE user_id = ?');
-  const putData = db.prepare(`INSERT INTO user_data (user_id, data, updated_at) VALUES (?, ?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`);
-  const putIcal = db.prepare(`INSERT INTO user_data (user_id, ical) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET ical = excluded.ical`);
-  const byIcal = db.prepare('SELECT data FROM user_data WHERE ical = ?');
-  const load = uid => JSON.parse(getRow.get(uid)?.data || '{}');
+  const getRow = uid => db.get('SELECT data, ical FROM user_data WHERE user_id = ?', [uid]);
+  const putData = (uid, data) => db.run(`INSERT INTO user_data (user_id, data, updated_at) VALUES (?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`, [uid, data, Date.now()]);
+  const putIcal = (uid, token) => db.run('INSERT INTO user_data (user_id, ical) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET ical = excluded.ical', [uid, token]);
+  const load = async uid => JSON.parse((await getRow(uid))?.data || '{}');
 
   const app = new Hono();
   app.use(secureHeaders());
@@ -64,11 +78,11 @@ export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseUR
     const body = await c.req.json().catch(() => null);
     const uid = c.get('uid');
     if (!body || typeof body !== 'object') return c.json({ error: 'bad body' }, 400);
-    let data = load(uid);
+    let data = await load(uid);
     if (body.data != null) {
       if (!validData(body.data)) return c.json({ error: 'bad data' }, 400);
       data = merge(data, body.data, !!body.first);
-      putData.run(uid, JSON.stringify(data), Date.now());
+      await putData(uid, JSON.stringify(data));
     }
     return c.json({ data });
   });
@@ -76,19 +90,19 @@ export async function createApp({ dbPath = env.DB_PATH || 'cosmodoro.db', baseUR
   /* calendar subscription: a long random address, made on first use; rotate makes a new one (the old one stops) */
   app.post('/api/ical', signedIn, async c => {
     const uid = c.get('uid'), body = await c.req.json().catch(() => ({}));
-    let token = getRow.get(uid)?.ical;
-    if (!token || body?.rotate) putIcal.run(uid, (token = randomBytes(24).toString('base64url')));
+    let token = (await getRow(uid))?.ical;
+    if (!token || body?.rotate) await putIcal(uid, (token = randomBytes(24).toString('base64url')));
     return c.json({ url: `${baseURL}/api/ical/${token}.ics` });
   });
-  app.get('/api/ical/:file', c => {
-    const row = byIcal.get(c.req.param('file').replace(/\.ics$/, ''));
+  app.get('/api/ical/:file', async c => {
+    const row = await db.get('SELECT data FROM user_data WHERE ical = ?', [c.req.param('file').replace(/\.ics$/, '')]);
     if (!row) return c.notFound();
     return c.body(ical(JSON.parse(row.data)), 200, { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'no-store' });
   });
 
   app.all('/api/*', c => c.notFound());
-  app.use('/*', serveStatic({ root: WEB }));
-  return { app, auth, db };
+  if (!env.VERCEL) app.use('/*', serveStatic({ root: WEB })); /* on Vercel the pages come from its CDN */
+  return { app, auth };
 }
 
 const KEYS = { cats: 'array', missions: 'array', flights: 'array', settings: 'object' };

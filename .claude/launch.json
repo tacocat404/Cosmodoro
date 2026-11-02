@@ -10,7 +10,7 @@
     {
       "name": "app",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "server"],
+      "runtimeArgs": ["run", "dev"],
       "port": 8787
     }
   ]

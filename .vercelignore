@@ -1,0 +1,7 @@
+design
+docs
+.local
+.claude
+server/test
+*.db*
+.env
