@@ -102,6 +102,12 @@
   .pd-chip .pi { width: 18px; height: 18px; filter: drop-shadow(0 0 5px currentColor); }
   .pd-note { width: 100%; font-size: 12px; color: var(--ink-3); }
   .pd-note.ok { color: var(--ink-2); }
+  body.free .route { visibility: hidden; }
+  body.free #arriveBtn { display: none; }
+  .end-ask { display: none; align-items: center; gap: 6px; }
+  .end-ask span { margin-right: 8px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+  .ctrls.asking > :not(.end-ask) { display: none; }
+  .ctrls.asking .end-ask { display: inline-flex; }
   .pd-stats { margin-top: 34px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.12); }
   .pd-stats div { padding: 16px 20px 0; border-left: 1px solid rgba(255,255,255,.12); }
   .pd-stats div:first-child { border-left: 0; padding-left: 0; }
@@ -493,6 +499,7 @@ const ATLAS = q.get('mode') === 'atlas';
 if (ATLAS) document.body.classList.add('atlas');
 const topicKey = TOPICS[q.get('topic')] ? q.get('topic') : CATS[0].key;
 const T = TOPICS[topicKey];
+const FREE = q.get('min') === 'free'; /* free flight: no set time, the clock counts up until you finish */
 const MIN = Math.min(180, Math.max(1, Math.round(+q.get('min')) || 25));
 const MISSION = q.get('mission') || '자유 비행';
 const NO = q.get('no') || '01';
@@ -507,7 +514,7 @@ $('timer').textContent = `${MIN}:00`;
 $('bigNo').textContent = NO;
 $('destEn').textContent = T.en;
 $('destKo').textContent = T.ko;
-$('cdDest').textContent = `${T.ko} · ${T.topic} · ${MIN}분`;
+$('cdDest').textContent = `${T.ko} · ${T.topic} · ${FREE ? '자유 비행' : `${MIN}분`}`;
 $('arrRoute').textContent = `지구 기지 → ${T.ko}`;
 $('arrNum').textContent = `${MIN}:00`;
 $('arrPlace').textContent = T.ko;
@@ -1557,7 +1564,8 @@ const speedAt = p => { const r = 1 + (AU[destKey] - 1) * (1 - Math.cos(Math.PI *
 /* =========================================================
    FLIGHT STATE + UI
    ========================================================= */
-const F = { total: MIN * 60, elapsed: 0, paused: false, arrived: false, started: false, speed: 1, burn: 0, view: 'chase', m: 0, clock: 0, arrT: 0, snap: false, ms: 0 };
+/* in free flight `total` is only the trip out (3 min, then you stay in orbit); `study` is the time that counts */
+const F = { total: FREE ? 180 : MIN * 60, study: 0, orbit: false, elapsed: 0, paused: false, arrived: false, started: false, speed: 1, burn: 0, view: 'chase', m: 0, clock: 0, arrT: 0, snap: false, ms: 0 };
 const T_HOLD = THREE.MathUtils.clamp(F.total * 0.03, 28, 80), T_SWING = 22, BURN_SECS = 18;
 const AT = { focus: null, shown: null, f: 0, ef: 0, screen: {}, pos: new THREE.Vector3(), look: new THREE.Vector3(), primed: false, edit: false, armed: false, justMade: false };
 const atA = new THREE.Vector3(), atB = new THREE.Vector3(), atC = new THREE.Vector3(), atP = new THREE.Vector3(), atL = new THREE.Vector3();
@@ -1757,7 +1765,7 @@ function maybeAskSound() {
 const logEl = $('log');
 function log(head, text) {
   const d = document.createElement('div');
-  d.innerHTML = `<b></b><span></span><em>${fmt(F.elapsed)}</em>`;
+  d.innerHTML = `<b></b><span></span><em>${fmt(FREE ? F.study : F.elapsed)}</em>`;
   d.children[0].textContent = head; d.children[1].textContent = text;
   logEl.appendChild(d);
   while (logEl.children.length > 4) logEl.firstChild.remove();
@@ -1782,9 +1790,9 @@ function startCountdown() {
 
 /* arrival: a poster printed from the last frame, local fact, rating */
 const POSTER_INK = { mars: '#c4451d', venus: '#b8873e', saturn: '#a3814a', neptune: '#2c5bd0', mercury: '#7a63c9', jupiter: '#c0782c', uranus: '#2f9cc0' };
-const flight = { planet: T.planet, topic: topicKey, min: MIN, no: NO, mission: MISSION, date: DATE, at: Date.now(), done: false, rating: 0 };
+const flight = { planet: T.planet, topic: topicKey, min: FREE ? 0 : MIN, ...(FREE ? { free: true } : {}), no: NO, mission: MISSION, date: DATE, at: Date.now(), done: false, rating: 0 };
 function saveFlight() {
-  if (!F.arrived) return; /* only finished flights count as focus time */
+  if (!F.arrived && !(FREE && flight.min >= 1)) return; /* only finished flights count as focus time; free flight counts as it goes */
   try {
     const list = JSON.parse(store.get('cosmodoro.flights', '[]'));
     const i = list.findIndex(f => f.at === flight.at);
@@ -1964,6 +1972,46 @@ function togglePause() {
 }
 $('pauseBtn').addEventListener('click', togglePause);
 $('arriveBtn').addEventListener('click', () => { F.started = true; F.elapsed = F.total; });
+
+/* free flight. The time comes from the wall clock, not the render loop: the loop stops in a hidden tab, and people read
+   other tabs while they study. It's saved as it goes, so closing the tab after two hours doesn't lose them.
+   A gap over 5 min means the computer slept (timers still run every minute in a hidden tab), so that isn't counted. */
+const ctrlsEl = document.querySelector('.ctrls');
+let studyAt = Date.now();
+function studyTick() {
+  const t = Date.now(), gap = (t - studyAt) / 1000;
+  studyAt = t;
+  if (F.started && !F.paused && !F.arrived && gap < 300) F.study += gap;
+  flight.min = Math.floor(F.study / 60);
+}
+const minText = m => `${m >= 60 ? `${Math.floor(m / 60)}시간 ` : ''}${m % 60}분`;
+if (FREE) {
+  document.body.classList.add('free');
+  $('timer').textContent = '00:00';
+  $('eyebrow').textContent = `${T.ko}행 — 자유 비행`;
+  ctrlsEl.insertAdjacentHTML('beforeend', `<button class="pd-btn" id="endBtn">여기서 마치기</button>
+    <div class="end-ask"><span id="endText"></span><button class="pd-btn solid" id="endYes"></button><button class="pd-btn quiet" id="endNo">계속 비행</button></div>`);
+  $('endBtn').addEventListener('click', () => {
+    studyTick();
+    const short = flight.min < 1;
+    $('endText').textContent = short ? '1분이 안 되면 기록되지 않아요' : `${minText(flight.min)}을 기록하고 마칠까요`;
+    $('endYes').textContent = short ? '나가기' : '마치기';
+    ctrlsEl.classList.add('asking');
+  });
+  $('endNo').addEventListener('click', () => ctrlsEl.classList.remove('asking'));
+  $('endYes').addEventListener('click', () => {
+    studyTick();
+    if (flight.min < 1) { location.href = './'; return; }
+    $('arrNum').textContent = fmt(F.study);
+    $('arrRoute').textContent = `자유 비행 · 지구 기지 → ${T.ko}`;
+    $('arrPlace').nextSibling.textContent = ` 궤도에서 ${minText(flight.min)} 집중했어요. 미션 「`;
+    $('pMin').textContent = `${flight.min} MIN · ${T.en}`;
+    F.elapsed = F.total;
+    arrive();
+  });
+  setInterval(() => { studyTick(); saveFlight(); }, 30000);
+  addEventListener('pagehide', () => { studyTick(); saveFlight(); });
+}
 document.querySelectorAll('.seg.demo button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.seg.demo button').forEach(x => x.classList.toggle('on', x === b));
   F.speed = +b.dataset.s;
@@ -2063,7 +2111,7 @@ function targetFps() {
   if (F.paused) return 15;
   const settling = Math.abs(F.m - (F.view === 'system' ? 1 : 0)) > 0.004;
   const p = F.elapsed / F.total;
-  const busy = performance.now() - ORB.at < 1500 || !F.started || F.clock < T_HOLD + T_SWING + 4 || settling || (F.arrived && F.arrT < 8) || p > FLIP0 - 0.004 || ATLAS;
+  const busy = performance.now() - ORB.at < 1500 || !F.started || F.clock < T_HOLD + T_SWING + 4 || settling || (F.arrived && F.arrT < 8) || (p > FLIP0 - 0.004 && !(FREE && p >= 1)) || ATLAS;
   return busy ? 60 : QUALITY[qKey].cruise;
 }
 function loop(now) {
@@ -2150,10 +2198,13 @@ function frame(now) {
   if (moving) F.elapsed = Math.min(F.total, F.elapsed + wallDt * F.speed);
   const p = F.elapsed / F.total;
   while (!ATLAS && F.ms < MILESTONES.length && F.started && MILESTONES[F.ms].test(p)) { const m = MILESTONES[F.ms++]; log(m.head, m.text); }
-  if (F.started && F.elapsed >= F.total) arrive();
+  if (FREE) {
+    studyTick();
+    if (!F.orbit && F.elapsed >= F.total) { F.orbit = true; log('궤도 진입', `${T.ko} 궤도에 머물러요`); $('eyebrow').textContent = `${T.ko} 궤도 — 자유 비행`; }
+  } else if (F.started && F.elapsed >= F.total) arrive();
   if (F.started) F.clock += dt;
   if (F.arrived) F.arrT += dt;
-  const burnTarget = !F.started || F.arrived ? 0 : (F.clock < BURN_SECS || p >= BURN0) ? 1 : 0;
+  const burnTarget = !F.started || F.arrived || F.orbit ? 0 : (F.clock < BURN_SECS || p >= BURN0) ? 1 : 0;
   F.burn += (burnTarget - F.burn) * Math.min(1, dt * 1.2);
   F.m += ((F.view === 'system' ? 1 : 0) - F.m) * Math.min(1, dt * (ATLAS ? 0.42 : 1.6));
   if (Math.abs((F.view === 'system' ? 1 : 0) - F.m) < 0.004) F.m = F.view === 'system' ? 1 : 0;
@@ -2522,13 +2573,13 @@ function frame(now) {
 
   /* --- HUD: slow, one-way numbers --- */
   const remain = Math.max(0, F.total - F.elapsed);
-  $('timer').textContent = fmt(Math.ceil(remain - 0.001));
+  $('timer').textContent = FREE ? fmt(F.study) : fmt(Math.ceil(remain - 0.001));
   $('pct').textContent = Math.round(p * 100) + '%';
   $('done').style.width = (p * 100) + '%';
   $('dot').style.left = (p * 100) + '%';
   $('dot').parentNode.style.setProperty('--p', (p * 100) + '%');
   if (++uiTick % 8 === 0) {
-    $('tSpeed').textContent = moving ? speedAt(p).toFixed(1) : '0.0';
+    $('tSpeed').textContent = moving && !F.orbit ? speedAt(p).toFixed(1) : '0.0';
     const left = T.dist * (1 - p);
     $('tDist').textContent = left.toFixed(T.dist > 5 ? 1 : 2);
     const dl = document.getElementById('destDistLabel');
@@ -2536,10 +2587,10 @@ function frame(now) {
     $('tape').style.setProperty('--p', (p * 100) + '%');
   }
   idle += wallDt;
-  if (!calm && idle > 6 && moving && !$('settings').classList.contains('on') && !missionsOpen() && mlEl.next.hidden) document.body.classList.add('calm');
+  if (!calm && idle > 6 && moving && !$('settings').classList.contains('on') && !missionsOpen() && mlEl.next.hidden && !ctrlsEl.classList.contains('asking')) document.body.classList.add('calm');
   if (now - titleAt > 1000) {
     titleAt = now;
-    document.title = F.arrived ? `도착 · ${T.ko} — Cosmodoro` : `${fmt(Math.ceil(remain - 0.001))} · ${T.ko}행 — Cosmodoro`;
+    document.title = F.arrived ? `도착 · ${T.ko} — Cosmodoro` : `${FREE ? fmt(F.study) : fmt(Math.ceil(remain - 0.001))} · ${T.ko}행 — Cosmodoro`;
   }
 }
 

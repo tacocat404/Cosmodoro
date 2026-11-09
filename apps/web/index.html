@@ -136,6 +136,9 @@
   .timer .dg { width: var(--dw, .6em); overflow: hidden; transition: width .5s cubic-bezier(.2,.8,.2,1), opacity .4s;
     -webkit-mask: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
   .timer .dg.off { width: 0; opacity: 0; }
+  .timer .inf { display: none; line-height: .9em; }
+  .timer.free > :not(.inf) { display: none; }
+  .timer.free .inf { display: inline-block; }
   .timer .col { display: block; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
   .timer .col i { display: block; height: .9em; font-style: normal; text-align: center; }
   .timer.snap .dg, .timer.snap .col { transition: none; }
@@ -563,7 +566,7 @@
     <div class="hero-bottom">
       <div class="eyebrow"><span class="sig" aria-hidden="true"><i></i><i></i><svg class="pi"><use id="sigPlanet" href="#pl-mars"/></svg></span><span id="eyebrowText">화성까지 — Next destination · Mars</span></div>
       <div class="time-row">
-        <div class="dial" id="dial" tabindex="0" role="spinbutton" aria-label="비행 시간(분)" aria-valuemin="5" aria-valuemax="120" aria-valuenow="25">
+        <div class="dial" id="dial" tabindex="0" role="spinbutton" aria-label="비행 시간(분)" aria-valuemin="5" aria-valuemax="125" aria-valuenow="25">
           <div class="timer" id="timer">25:00</div>
           <div class="ruler" aria-hidden="true"><div class="ruler-track" id="rulerTrack"></div><i class="ruler-pin"></i></div>
         </div>
@@ -1049,11 +1052,13 @@ function paintTicks() {
     t.line.classList.toggle('done', done);
     if (t.num) t.num.classList.toggle('done', done);
   });
-  if (route.label) route.label.textContent = `${state.dur} MIN`;
+  if (route.label) route.label.textContent = isFree() ? 'FREE' : `${state.dur} MIN`;
 }
 /* where the ship sits along the route: 5 min near the start, 120 min near the end */
 const route = { u: 0.17, target: 0.17, raf: 0 };
-const durToU = d => 0.07 + 0.86 * (d - 5) / 115;
+/* the last stop on the dial, past 120: free flight, no set time */
+const FREE_DUR = 125, isFree = () => state.dur === FREE_DUR;
+const durToU = d => 0.07 + 0.86 * (Math.min(d, 120) - 5) / 115;
 function placeShip(u) {
   if (!route.geo) return;
   const { cx, cy, R, a0, a1 } = route.geo, a = a0 + (a1 - a0) * u;
@@ -1561,7 +1566,7 @@ function scrambleTo(node, text, glyphs = GLYPHS) {
    ========================================================= */
 function launchHref() {
   const m = missions[state.mission];
-  const q = new URLSearchParams({ topic: state.topic, min: state.dur, mission: m ? m.t : '자유 비행', no: m ? pad2(state.mission + 1) : '—', ...(m ? { mid: m.id } : {}) });
+  const q = new URLSearchParams({ topic: state.topic, min: isFree() ? 'free' : state.dur, mission: m ? m.t : '자유 비행', no: m ? pad2(state.mission + 1) : '—', ...(m ? { mid: m.id } : {}) });
   return `flight.html?${q.toString()}`;
 }
 function renderCopy() {
@@ -1570,7 +1575,7 @@ function renderCopy() {
   setTimerDur(state.dur, timerDir);
   scrambleTo($('eyebrowText'), `${t.ko}까지 — Next destination · ${t.en}`);
   scrambleTo($('metaRoute'), `지구 기지 → ${t.ko}`);
-  scrambleTo($('metaTopic'), `${t.topic} · ${state.dur}분 비행`);
+  scrambleTo($('metaTopic'), `${t.topic} · ${isFree() ? '자유 비행' : `${state.dur}분 비행`}`);
   scrambleTo($('metaMission'), m ? `Mission ${pad2(state.mission + 1)}` : 'Free flight');
   scrambleTo($('destNo'), t.no, '0123456789');
   $('destAll').textContent = String(CATS.length).padStart(2, '0');
@@ -1657,6 +1662,7 @@ secReels.forEach((r, i) => r.el.classList.add('sec', 's' + i));
 const colon = document.createElement('span');
 colon.className = 'rest'; colon.textContent = ':';
 timerEl.replaceChildren(...minReels.map(r => r.el), colon, ...secReels.map(r => r.el));
+timerEl.insertAdjacentHTML('beforeend', '<span class="inf">∞</span>');
 function measureDigit() {
   const p = document.createElement('span');
   p.textContent = '0'; p.style.cssText = 'position:absolute;visibility:hidden';
@@ -1669,6 +1675,8 @@ measureDigit();
 document.fonts.ready.then(measureDigit);
 addEventListener('resize', measureDigit);
 function setTimerDur(v, dir) {
+  timerEl.classList.toggle('free', v === FREE_DUR);
+  if (v === FREE_DUR) { timerEl.setAttribute('aria-label', '자유 비행'); return; }
   const digits = [Math.floor(v / 100), Math.floor(v / 10) % 10, v % 10];
   const show = [v >= 100, v >= 10, true];
   const instant = !dir || RM_MAIN;
@@ -1683,7 +1691,7 @@ function setTimerDur(v, dir) {
   if (instant) { void timerEl.offsetWidth; timerEl.classList.remove('snap'); }
 }
 function setDur(v) {
-  v = Math.max(5, Math.min(120, Math.round(v / 5) * 5));
+  v = Math.max(5, Math.min(FREE_DUR, Math.round(v / 5) * 5));
   if (v === state.dur) return;
   const up = v > state.dur;
   state.dur = v;
@@ -1691,6 +1699,7 @@ function setDur(v) {
   quietCopy = true; renderCopy(); quietCopy = false;
   timerDir = 0;
   dial.setAttribute('aria-valuenow', v);
+  dial.setAttribute('aria-valuetext', isFree() ? '자유 비행' : `${v}분`);
   syncRuler(); moveShip();
 }
 let dialDrag = null, wheelAcc = 0;
@@ -1715,7 +1724,7 @@ dial.addEventListener('keydown', e => {
 });
 /* ruler: one tick per 5 minutes, 16px apart — the same distance the drag uses, so it moves under the finger */
 const TICK = 16;
-$('rulerTrack').innerHTML = Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(v => `<span class="tk${v % 15 === 0 ? ' major' : ''}" data-v="${v}"><em>${v}</em></span>`).join('');
+$('rulerTrack').innerHTML = Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(v => `<span class="tk${v % 15 === 0 ? ' major' : ''}" data-v="${v}"><em>${v}</em></span>`).join('') + `<span class="tk major" data-v="${FREE_DUR}"><em>∞</em></span>`;
 function syncRuler() {
   const idx = state.dur / 5 - 1;
   $('rulerTrack').style.transform = `translateY(${88 - TICK / 2 - idx * TICK}px)`;
@@ -2315,15 +2324,15 @@ function openPass() {
   tix.style.setProperty('--tk', tk.ink); tix.style.setProperty('--tk-on', tk.on);
   tix.classList.remove('torn');
   $('tkTo').textContent = tk.code;
-  $('tkToGo').textContent = `${state.dur} MIN TO GO →`;
+  $('tkToGo').textContent = isFree() ? 'FREE FLIGHT →' : `${state.dur} MIN TO GO →`;
   $('tkDate').textContent = DATE;
   $('passMission').textContent = m ? m.t : '자유 비행';
   $('passFlight').textContent = `CD-${t.no}${no}`;
   $('passGate').textContent = t.no;
   $('passBoard').textContent = hm(at);
-  $('passArr').textContent = hm(arr);
+  $('passArr').textContent = isFree() ? '∞' : hm(arr);
   $('passCode').textContent = t.en.toUpperCase();
-  $('passNote').textContent = `탑승하면 ${state.dur}분 동안 이 미션 하나만 해요. 알림은 잠시 꺼 두세요.`;
+  $('passNote').textContent = `탑승하면 ${isFree() ? '마칠 때까지' : `${state.dur}분 동안`} 이 미션 하나만 해요. 알림은 잠시 꺼 두세요.`;
   $('passHint').textContent = '아래 띠를 끌어 내리면 출발해요';
   shootTicketPlanets(t);
   let sd = [...`${t.no}${no}${state.dur}`].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 2147483647 || 7;
