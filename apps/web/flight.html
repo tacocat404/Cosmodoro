@@ -463,6 +463,7 @@
 </script>
 <script type="module">
 import './sync.js';
+import { pipSupported, togglePip } from './pip.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -1972,6 +1973,30 @@ function togglePause() {
 }
 $('pauseBtn').addEventListener('click', togglePause);
 $('arriveBtn').addEventListener('click', () => { F.started = true; F.elapsed = F.total; });
+
+/* the small window (pip.js). The render loop stops in a hidden tab, so while hidden the small window moves the
+   flight on by the wall clock itself, the same way the loop catches up on return. */
+if (pipSupported && !ATLAS) {
+  $('pauseBtn').insertAdjacentHTML('afterend', `<button class="ctrl" id="pipBtn" aria-label="작은 창으로 보기" title="작은 창으로 보기">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="12" width="6.5" height="4.5" rx="1" fill="currentColor" stroke="none"/></svg></button>`);
+  $('pipBtn').addEventListener('click', () => togglePip({
+    pause: togglePause,
+    state() {
+      if (document.hidden) {
+        const t = performance.now(), w = (t - lastWall) / 1000;
+        lastWall = t;
+        if (F.started && !F.paused && !F.arrived) F.elapsed = Math.min(F.total, F.elapsed + w * F.speed);
+        if (FREE) studyTick();
+      }
+      const p = F.elapsed / F.total;
+      return {
+        p, free: FREE, orbit: FREE && p >= 1, started: F.started, paused: F.paused, done: F.arrived || (!FREE && p >= 1),
+        time: FREE ? fmt(F.study) : fmt(Math.ceil(Math.max(0, F.total - F.elapsed) - 0.001)),
+        ko: T.ko, en: T.en, accent: T.accent, ring: !!CP[T.planet].ring,
+      };
+    },
+  }));
+}
 
 /* free flight. The time comes from the wall clock, not the render loop: the loop stops in a hidden tab, and people read
    other tabs while they study. It's saved as it goes, so closing the tab after two hours doesn't lose them.
