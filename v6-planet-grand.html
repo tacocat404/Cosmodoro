@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>행성 페이지 · 웅장한 구도 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter+Tight:wght@400;500;600&family=Quicksand:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+</head><body style="margin:0;background:#111;padding:20px">
+<!-- WIDGET START -->
+<style>
+.gw{display:flex;gap:8px;margin:0 0 12px}
+.fr{width:100%;overflow:hidden;border-radius:12px;margin:0 0 6px}
+.st{position:relative;width:680px;height:380px;overflow:hidden;background:#020305;color:#f2f0ea;font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;transform-origin:0 0}
+.st canvas{position:absolute;left:0;top:0;width:680px;height:380px;pointer-events:none}
+.st svg.a:not(.logo),.st .shade{pointer-events:none}
+.st .a{position:absolute}
+.st .m{font:800 13px/1 "Big Shoulders Display","Arial Narrow",sans-serif;letter-spacing:.2em;color:rgba(242,240,234,.62);white-space:nowrap}
+.st .m b{font-weight:500;color:var(--ac)}
+.st .k{font:400 11px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;letter-spacing:.04em;color:rgba(242,240,234,.56);white-space:nowrap}
+.st .k b{font-weight:500;color:var(--ac)}
+.st .wm{font:600 11px/1 Quicksand,sans-serif;letter-spacing:.3em;color:#f2f0ea}
+.st .big{font:900 100px/.8 "Big Shoulders Display","Arial Narrow",sans-serif;white-space:nowrap;color:#f2f0ea;transform-origin:50% 100%}
+.st .thin{font:400 31px/1 Quicksand,sans-serif;letter-spacing:.62em;margin-right:-.62em;white-space:nowrap}
+.st .pill{font:600 12px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;background:#f2f0ea;color:#050505;border-radius:99px;padding:9px 16px;white-space:nowrap}
+.st .chip{font:500 11px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:#f2f0ea;border:1px solid color-mix(in srgb,var(--ac) 70%,transparent);border-radius:99px;padding:8px 12px;white-space:nowrap}
+.st .chip i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ac);margin-right:7px}
+.st .q{font:400 11px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.5);white-space:nowrap}
+.st .row{display:flex;align-items:center;gap:12px;left:0;right:0;justify-content:center}
+.st .sv{font:500 12px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:#f2f0ea;margin-top:6px;white-space:nowrap}
+.st .sv.hot{color:var(--ac)}
+.st .gb{display:inline-flex;align-items:center;gap:6px;height:30px;border-radius:99px;border:1px solid rgba(242,240,234,.18);background:rgba(8,9,12,.45);backdrop-filter:blur(8px);color:#f2f0ea;font:500 11.5px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;white-space:nowrap}
+.st .gb.ic{width:36px;height:36px;justify-content:center;color:rgba(242,240,234,.8)}
+.st .dot{width:7px;height:7px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac)}
+.st .nm{font:600 13px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:#f2f0ea;letter-spacing:-.01em}
+.st .sep{width:1px;height:10px;background:rgba(242,240,234,.3)}
+.st .tm{font:500 12px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:var(--ac)}
+.st .cta{display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 5px 0 18px;border-radius:99px;background:#f2f0ea;color:#050505;font:600 12.5px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.st .cta .ar{width:26px;height:26px;border-radius:50%;background:#050505;color:#f2f0ea;display:grid;place-items:center}
+.st .back{font:500 10px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.78)}
+.st .logo{height:20px;width:auto;color:#f6f4ee;overflow:visible}.st .logo .rk{fill:var(--ac)}
+.st .who{right:20px;top:34px;display:flex;align-items:center;gap:6px}
+.st .who .tm{font:400 10px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.6)}
+.st .who .tm::before{content:"·";margin-right:8px;color:rgba(242,240,234,.35)}
+.st .who .nm{font-size:10.5px}
+.st .who .pic{display:inline-flex;width:15px;height:15px;color:var(--ac);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--ac) 55%,transparent))}
+.st .who .pic svg{width:15px;height:15px}
+.st .who .ed{font:600 10.5px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:#f2f0ea;background:transparent;border:0;border-bottom:1px solid var(--ac);outline:0;padding:0 0 3px;width:110px;caret-color:var(--ac)}
+.st .who .hint{position:absolute;right:0;top:20px;font:400 9px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.45);white-space:nowrap;opacity:0;transition:opacity .25s}
+.st .who{position:absolute}.st .who.edit .hint,.st .who.ask .hint{opacity:1}
+.st .more{cursor:pointer;transition:color .2s}.st .more:hover{color:#f2f0ea}
+.st .bar{left:150px;right:150px;top:15px;display:flex;justify-content:center;align-items:baseline;gap:14px;white-space:nowrap}
+.st .bar .go{font-size:11.5px;padding-bottom:4px;gap:6px}
+.st .bar .go svg{width:12px;height:12px}
+.st .bar .more{font-size:10px}
+.st .dock{left:0;right:0;top:268px;text-align:center}
+.st .l1{display:flex;justify-content:center;align-items:center;gap:10px}
+.st .l1 .tm{font:400 12px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.6);margin-left:2px}
+.st .l1 .tm::before{content:"·";margin-right:10px;color:rgba(242,240,234,.35)}
+.st .l2{display:flex;justify-content:center;align-items:baseline;gap:26px;margin-top:16px}
+.st .go{display:inline-flex;align-items:center;gap:9px;font:600 17px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:#f2f0ea;letter-spacing:-.01em;padding-bottom:7px;border-bottom:1px solid rgba(242,240,234,.55);text-shadow:0 2px 18px rgba(0,0,0,.6)}
+.st .more{font:400 11.5px/1 "Inter Tight","Pretendard Variable",system-ui,sans-serif;color:rgba(242,240,234,.5);text-shadow:0 1px 10px rgba(0,0,0,.7)}
+.gl{font-size:13px;color:var(--text-secondary,#999);margin:0 0 18px}
+</style>
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">행성 페이지를 웅장하게 바꾸는 두 가지 구도 시안: 지평선 구도와 근접 비행 구도</h2>
+<div class="gw"><button data-p="mars">화성</button><button data-p="jupiter">목성</button><button data-p="neptune">해왕성</button></div>
+
+<div class="fr"><div class="st" id="sA">
+  <canvas class="sky"></canvas>
+  <div class="a big" id="tA" style="left:0;right:0;bottom:142px;text-align:center"></div>
+  <canvas class="pl"></canvas>
+  <div class="a shade" style="inset:0;background:linear-gradient(180deg,rgba(2,3,5,.5),transparent 16%,transparent 62%,rgba(2,3,5,.9) 96%)"></div>
+  <canvas class="gr" style="mix-blend-mode:screen;opacity:.5"></canvas>
+  <svg class="logo a" style="left:18px;top:14px" viewBox="0 -4 464 84" role="img" aria-label="Cosmodoro"><defs><filter id="brandgA" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="a"/><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="a"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#brandgA)"><g fill="none" stroke="currentColor" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"><path d="M31 8A17 17 0 1 0 31 32" transform="translate(6.0 22)"/><path d="M25 6C20 2.5 7 3 7 11C7 17 13 18 16 19.5M21 22.5C26 25.5 26.5 36 17 37C11 37.6 7 36 5 34" transform="translate(134.0 22)"/><path d="M4 37V4L21 25M27 18L40 4V37" transform="translate(175.0 22)"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(230.0 22)"/><path d="M4 4V36M12 4H14A16 16 0 0 1 14 36H12" transform="translate(281.0 22)"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(326.0 22)"/><path d="M4 14V37M11 4H15A8.5 8.5 0 0 1 15 21H10M17 27L26 37" transform="translate(377.0 22)"/><circle cx="381.0" cy="26" r="3.6" fill="currentColor" stroke="none"/><path d="M20 3A17 17 0 1 1 5.3 11.5" transform="translate(418.0 22)"/></g><mask id="brandRingA" maskUnits="userSpaceOnUse" x="-50" y="-50" width="700" height="200"><rect x="-50" y="-50" width="700" height="200" fill="#fff"/><line x1="47.9" y1="74.7" x2="121.8" y2="12.8" stroke="#000" stroke-width="10.8"/><circle cx="92.2" cy="38.9" r="15.3" fill="#000"/></mask><g mask="url(#brandRingA)" fill="none" stroke="currentColor"><circle cx="87.0" cy="42.0" r="33" stroke-width="5.4"/><path d="M87.0 9.0v7.2M120.0 42.0h-7.2M87.0 75.0v-7.2M54.0 42.0h7.2" stroke-width="5.0"/></g><circle cx="80.8" cy="47.2" r="15.5" fill="currentColor" mask="url(#brandRingA)"/><circle cx="92.2" cy="38.9" r="10.3" fill="none" stroke="currentColor" stroke-width="4.5"/><line x1="58.1" y1="66.2" x2="121.8" y2="12.8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path class="rk" d="M13 0C7-3.4-3-3.4-7-2.3L-7 2.3C-3 3.4 7 3.4 13 0Z M-3-2.6L-10-7.5L-7-2.2Z M-3 2.6L-10 7.5L-7 2.2Z" transform="translate(128.7 7.0) rotate(-40) scale(1.05)"/></g></svg>
+  <span class="a back" style="right:20px;top:17px">← 태양계</span>
+  <div class="a who"><span class="pic"></span><span class="nm cat"></span><span class="tm"></span><span class="hint"></span></div>
+  <div class="a bar"><span class="go">이 행성으로 집중하기<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span><span class="more ren">이름 바꾸기</span><span class="more del">떼기</span></div>
+  <svg class="a" style="inset:0" width="680" height="380" fill="none" stroke="rgba(242,240,234,.5)" stroke-width="1"><path d="M44 78v-14h14M636 78v-14h-14"/></svg>
+  <span class="a m prev" style="left:16px;top:150px"></span>
+  <span class="a m next" style="right:16px;top:150px"></span>
+</div></div>
+<p class="gl">A안 · 지평선 — 행성이 화면 아래에서 떠오르고, 거대한 이름이 지평선 뒤로 잠겨요</p>
+
+<div class="fr"><div class="st" id="sB">
+  <canvas class="sky"></canvas>
+  <canvas class="pl"></canvas>
+  <div class="a" style="inset:0;background:linear-gradient(180deg,rgba(2,3,5,.45),transparent 18%)"></div>
+  <svg class="a" style="inset:0" width="680" height="380" fill="none"><path id="trB" d="M-10 304C110 284 236 232 396 132" stroke="rgba(242,240,234,.2)" stroke-dasharray="12 6"/><path id="trB2" d="M-10 304C110 284 236 232 396 132" stroke="rgba(242,240,234,.7)" stroke-dasharray="12 6"/><g id="shB"><g transform="scale(.8)"><path d="M10 0L3-2.8H-6l-2.2-2.6h-1.6L-8.6 0l-1.2 5.4h1.6L-6 2.8H3Z" fill="#f2f0ea"/><circle cx="-11.5" r="1.8" fill="var(--ac)"/></g></g></svg>
+  <canvas class="gr" style="mix-blend-mode:screen;opacity:.5"></canvas>
+  <span class="a wm" style="left:20px;top:18px">COSMODORO</span>
+  <span class="a k" style="right:20px;top:18px;color:#f2f0ea">← 태양계</span>
+  <div class="a stats" style="left:20px;top:62px;display:grid;gap:14px"></div>
+  <div class="a thin" id="tB" style="left:0;right:0;top:244px;text-align:center"></div>
+  <span class="a k mis" style="left:0;right:0;top:291px;text-align:center;font-size:12px"></span>
+  <div class="a row" style="top:324px"><span class="pill">이 행성으로 집중하기 →</span><span class="q">이름 바꾸기</span><span class="q">떼기</span></div>
+  <span class="a m prev" style="left:20px;bottom:18px"></span>
+  <span class="a m next" style="right:20px;bottom:18px"></span>
+</div></div>
+<p class="gl">B안 · 근접 비행 — 행성이 화면보다 커서 한쪽 가장자리만 보이고, 작은 우주선이 그 앞을 지나가요</p>
+
+<script>
+(() => {
+const BASE = location.hostname === 'localhost' ? '/apps/web/assets/' : 'https://cdn.jsdelivr.net/gh/tacocat404/Cosmodoro@main/apps/web/assets/';
+const P = {
+  mars: { en: 'MARS', cat: '컴퓨터프로그래밍2', ac: '#ff5b1f', f: 'mars_4k.jpg', lon: -1.25, atm: [255, 150, 105], ak: .55, prev: 'EARTH', next: 'JUPITER', no: '04', fact: '화성의 하루(솔)는 약 24시간 40분이에요. 올림푸스 화산은 에베레스트보다 2.5배쯤 높아요.', s: [['태양까지', '2억 2,800만 km'], ['1년', '687일'], ['유형', '암석 행성'], ['집중한 시간', '3시간 26분']] },
+  jupiter: { en: 'JUPITER', cat: '선형대수', ac: '#e8b04f', f: 'jupiter_4k.jpg', lon: 2.4, atm: [255, 215, 165], ak: .4, prev: 'MARS', next: 'SATURN', no: '05', fact: '목성의 대적점은 지구보다 큰 폭풍이에요. 300년 넘게 불고 있어요.', s: [['태양까지', '7억 7,800만 km'], ['1년', '11.9년'], ['유형', '가스 행성'], ['집중한 시간', '12시간 40분']] },
+  neptune: { en: 'NEPTUNE', cat: '영어 회화', ac: '#2f7cff', f: 'neptune_2k.jpg', lon: .6, atm: [90, 150, 255], ak: .9, prev: 'URANUS', next: 'MERCURY', no: '08', fact: '해왕성의 바람은 시속 2,000km가 넘어요. 태양계에서 가장 빨라요.', s: [['태양까지', '45억 km'], ['1년', '165년'], ['유형', '얼음 행성'], ['집중한 시간', '1시간 05분']] },
+};
+const DPR = 2, W = 680, H = 380, $ = (r, q) => r.querySelector(q);
+const tex = {};
+const load = f => tex[f] ??= new Promise((ok, no) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => { const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(i, 0, 0); ok(x.getImageData(0, 0, c.width, c.height)); }; i.onerror = no; i.src = BASE + f; });
+const cl = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+function planet(cv, T, o) {
+  cv.width = W * DPR; cv.height = H * DPR;
+  const w = cv.width, h = cv.height, x = cv.getContext('2d'), im = x.createImageData(w, h), D = im.data, td = T.data, tw = T.width, th = T.height;
+  const R = o.R * DPR, cx = o.cx * DPR, cy = o.cy * DPR, aw = o.aw / o.R, out = 1 + aw * 5;
+  const ll = Math.hypot(...o.L), lx = o.L[0] / ll, ly = o.L[1] / ll, lz = o.L[2] / ll, cp = Math.cos(o.pitch), sp = Math.sin(o.pitch), [ar, ag, ab] = o.atm;
+  for (let py = 0; py < h; py++) {
+    const dy = (py + .5 - cy) / R; if (dy > out || dy < -out) continue;
+    for (let px = 0; px < w; px++) {
+      const dx = (px + .5 - cx) / R, d2 = dx * dx + dy * dy; if (d2 > out * out) continue;
+      const d = Math.sqrt(d2), i = (py * w + px) * 4;
+      const gl = d > 1 - 1 / R ? Math.exp(-Math.max(0, d - 1) / aw) * cl((dx * lx + dy * ly) / d * 1.1 + .3) * o.ak : 0;
+      let a = 0, r = 0, g = 0, b = 0;
+      if (d < 1 + 1 / R) {
+        const nz = Math.sqrt(Math.max(0, 1 - d2)), y1 = dy * cp + nz * sp, z1 = -dy * sp + nz * cp;
+        let u = ((Math.atan2(dx, z1) + o.lon) / 6.2831853 + .5) % 1; if (u < 0) u += 1;
+        const fx = u * tw - .5, fy = cl(.5 + Math.asin(cl(y1 * .5 + .5) * 2 - 1) / Math.PI) * (th - 1);
+        const x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
+        const xa = ((x0 % tw) + tw) % tw, xb = (xa + 1) % tw, ya = y0, yb = Math.min(th - 1, y0 + 1);
+        const k00 = (ya * tw + xa) * 4, k10 = (ya * tw + xb) * 4, k01 = (yb * tw + xa) * 4, k11 = (yb * tw + xb) * 4;
+        const s = c => (td[k00 + c] * (1 - tx) + td[k10 + c] * tx) * (1 - ty) + (td[k01 + c] * (1 - tx) + td[k11 + c] * tx) * ty;
+        const ndl = dx * lx + dy * ly + nz * lz, lit = Math.pow(cl(ndl * 1.15 + .03), .8) * (.82 + .18 * nz) + .012;
+        const rim = Math.pow(1 - nz, 3) * o.ak * cl(ndl * 1.2 + .25) * .6;
+        r = s(0) * lit + ar * rim; g = s(1) * lit + ag * rim; b = s(2) * lit + ab * rim;
+        a = cl((1 - d) * R + .5);
+      }
+      const al = a + gl * (1 - a); if (al <= 0) continue;
+      D[i] = (r * a + ar * gl * (1 - a)) / al; D[i + 1] = (g * a + ag * gl * (1 - a)) / al; D[i + 2] = (b * a + ab * gl * (1 - a)) / al; D[i + 3] = al * 255;
+    }
+  }
+  x.putImageData(im, 0, 0);
+}
+function sky(cv, seed) {
+  cv.width = W * DPR; cv.height = H * DPR;
+  const x = cv.getContext('2d'); let s = seed;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < 700; k++) {
+    const px = rnd() * cv.width, py = rnd() * cv.height, m = Math.pow(rnd(), 4), rad = .45 + m * 1.25, t = rnd();
+    const c = t < .2 ? '170,195,255' : t < .8 ? '238,240,255' : '255,214,170';
+    if (m > .8) { const g = x.createRadialGradient(px, py, 0, px, py, rad * 4); g.addColorStop(0, `rgba(${c},.22)`); g.addColorStop(1, `rgba(${c},0)`); x.fillStyle = g; x.fillRect(px - rad * 4, py - rad * 4, rad * 8, rad * 8); }
+    x.fillStyle = `rgba(${c},${.3 + m * .7})`; x.beginPath(); x.arc(px, py, rad, 0, 7); x.fill();
+  }
+}
+function grain(cv) {
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), im = x.createImageData(W, H);
+  for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 26; }
+  x.putImageData(im, 0, 0);
+}
+const A = document.getElementById('sA'), B = document.getElementById('sB');
+sky($(A, '.sky'), 7); sky($(B, '.sky'), 23); grain($(A, '.gr')); grain($(B, '.gr'));
+const fitTitle = () => {
+  const t = $(A, '#tA'), s = document.createElement('span');
+  s.className = 'big'; s.style.cssText = 'position:absolute;visibility:hidden;font-size:100px'; s.textContent = t.textContent;
+  A.append(s); const wd = s.offsetWidth; s.remove();
+  t.style.fontSize = Math.min(178, 100 * 500 / wd) + 'px';
+};
+const tr = $(B, '#trB'), len = tr.getTotalLength(), at = .8, pt = tr.getPointAtLength(len * at), p2 = tr.getPointAtLength(len * at + 2);
+$(B, '#trB2').setAttribute('stroke-dasharray', '12 6 '.repeat(Math.floor((len * at - 14) / 18)) + '0 2000');
+$(B, '#shB').setAttribute('transform', `translate(${pt.x} ${pt.y}) rotate(${Math.atan2(p2.y - pt.y, p2.x - pt.x) * 57.3})`);
+let cur = 0;
+const who = $(A, '.who'), nm = $(A, '.nm'), hint = $(A, '.hint'), names = {};
+let editing = null;
+function cancel() { who.classList.remove('edit', 'ask'); hint.textContent = ''; if (!editing) return; const i = editing; editing = null; nm.style.display = ''; i.remove(); }
+function save(v) { v = v.trim(); if (v) { nm.textContent = v; names[curKey] = v; } cancel(); }
+function rename() {
+  if (editing) return;
+  const i = document.createElement('input'); i.className = 'ed'; i.value = nm.textContent; i.maxLength = 20; i.spellcheck = false;
+  nm.style.display = 'none'; nm.before(i); editing = i; who.classList.add('edit'); hint.textContent = 'Enter 저장 · Esc 취소';
+  i.focus(); i.select();
+  i.addEventListener('keydown', e => { if (e.key === 'Enter') save(i.value); if (e.key === 'Escape') cancel(); });
+  i.addEventListener('blur', () => save(i.value));
+}
+function detach() { cancel(); who.classList.add('ask'); hint.textContent = '떼려면 한 번 더 누르세요'; }
+let curKey = 'mars';
+$(A, '.ren').addEventListener('click', rename); $(A, '.del').addEventListener('click', () => who.classList.contains('ask') ? cancel() : detach());
+async function show(key) {
+  const p = P[key], me = ++cur; curKey = key;
+  [A, B].forEach(s => {
+    s.style.setProperty('--ac', p.ac);
+    s.querySelectorAll('.mis').forEach(e => e.innerHTML = s === A ? `<span class="m">MISSION ·</span> <b>${p.cat}</b>` : `<b>${p.cat}</b> · ${p.s[3][1]} 집중`);
+    $(s, '.prev').textContent = `‹ ${p.prev}`; $(s, '.next').textContent = `${p.next} ›`;
+    $(s, '.pl').getContext('2d').clearRect(0, 0, 9999, 9999);
+  });
+  $(A, '.cat').textContent = names[key] || p.cat;
+  $(A, '#tA').textContent = p.en; $(B, '#tB').textContent = p.en; 
+  $(A, '.tm').textContent = `${p.s[3][1]} 집중`;
+  $(A, '.pic').innerHTML = `<svg aria-hidden="true"><use href="#pl-${key}"/></svg>`;
+  cancel();
+  $(B, '.stats').innerHTML = p.s.slice(0, 3).map(([k, v]) => `<div><div class="k">${k}</div><div class="sv">${v}</div></div>`).join('') + `<div><div class="m">${p.no} / 08</div></div>`;
+  fitTitle();
+  const T = await load(p.f); if (me !== cur) return;
+  planet($(A, '.pl'), T, { cx: 340, cy: 215 + 560, R: 560, L: [-.8, -.5, .32], pitch: 1.2, lon: p.lon, atm: p.atm, ak: p.ak, aw: 9 });
+  planet($(B, '.pl'), T, { cx: 630, cy: -130, R: 400, L: [-.85, .12, .5], pitch: -.42, lon: p.lon + .9, atm: p.atm, ak: p.ak, aw: 7 });
+}
+document.querySelectorAll('.gw button').forEach(b => b.addEventListener('click', () => show(b.dataset.p)));
+const fit = () => document.querySelectorAll('.fr').forEach(f => { const k = f.clientWidth / W; f.firstElementChild.style.transform = `scale(${k})`; f.style.height = H * k + 'px'; });
+addEventListener('resize', fit); fit();
+(document.fonts?.ready || Promise.resolve()).then(fitTitle);
+const qp = new URLSearchParams(location.search);
+show(qp.get('p') || 'mars').then(() => { if (qp.get('edit')) rename(); if (qp.get('ask')) detach(); });
+})();
+</script>
+<script src="/apps/web/cosmo-shared.js"></script>
+<!-- WIDGET END -->
+</body></html>

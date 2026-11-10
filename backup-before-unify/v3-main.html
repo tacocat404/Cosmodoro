@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmodoro · 메인 v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300..800&family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<style>
+  :root {
+    --bg: #000;
+    --ink: #f2f2ef;
+    --ink-2: rgba(242, 242, 239, .62);
+    --ink-3: rgba(242, 242, 239, .36);
+    --hair: #262626;
+    --line: rgba(242, 242, 239, .14);
+    --line-2: rgba(242, 242, 239, .26);
+    --accent: #ff5b1f;
+    --c-code: #ff5b1f;
+    --c-design: #27c2b0;
+    --c-read: #eadcb4;
+    --c-eng: #2f7cff;
+    --display: "Inter Tight", "Pretendard Variable", sans-serif;
+    --data: "Archivo", "Pretendard Variable", sans-serif;
+    --body: "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --side-w: 560px;
+    --stats-h: 132px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--hair); color: var(--ink); font-family: var(--body); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; }
+  a { color: inherit; }
+
+  .grain {
+    position: fixed; inset: -50%; z-index: 90; pointer-events: none; opacity: .11; mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 -0.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: grain .9s steps(5) infinite;
+  }
+  @keyframes grain {
+    0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+    60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+  }
+  .meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-2); line-height: 1.55; }
+  .meta b { color: var(--ink); font-weight: 500; }
+  .rule { width: 18px; height: 1px; background: currentColor; opacity: .6; margin: 7px 0; }
+
+  .board {
+    height: 100vh; display: grid; gap: 1px;
+    grid-template-columns: minmax(0, 1fr) var(--side-w);
+    grid-template-rows: minmax(0, 1fr) 410px var(--stats-h);
+  }
+  .cell { background: var(--bg); position: relative; overflow: hidden; }
+
+  /* ---------------- hero ---------------- */
+  .hero { grid-column: 1 / -1; grid-row: 1 / 3; }
+  #heroCanvas, #heroOrbits { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #heroCanvas { transition: opacity .35s ease; }
+  #heroCanvas.swap, #heroOrbits.swap { opacity: 0; }
+  #heroOrbits { transition: opacity .35s ease; }
+  .hero-top { position: absolute; left: 40px; top: 34px; display: flex; gap: 46px; z-index: 2; align-items: flex-start; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: -.01em; margin-right: 6px; }
+  .brand i { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); transition: background .5s, box-shadow .5s; }
+  .ship-tag { position: absolute; z-index: 2; font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: .06em; white-space: nowrap; transform: translate(calc(-100% - 18px), -50%); transition: color .5s; pointer-events: none; text-align: right; }
+  .ship-tag span { color: var(--ink-3); }
+
+  .hero-bottom { position: absolute; left: 40px; right: calc(var(--side-w) + 40px); bottom: 34px; z-index: 2; }
+  .topics { display: flex; gap: 22px; margin-bottom: 26px; flex-wrap: wrap; }
+  .topic {
+    background: none; border: 0; border-bottom: 1px solid transparent; color: var(--ink-3); cursor: pointer; padding: 0 0 7px;
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; transition: color .25s, border-color .25s;
+  }
+  .topic .no { font-family: var(--mono); font-size: 10px; }
+  .topic i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .topic:hover { color: var(--ink-2); }
+  .topic.on { color: var(--ink); border-color: var(--ink); }
+  .topic.new { color: var(--ink-3); }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--ink-2); display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: blink 2s ease-in-out infinite; transition: background .5s; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .timer {
+    font-family: var(--display); font-weight: 500; font-size: clamp(96px, 11.6vw, 176px); line-height: .9; letter-spacing: -.045em;
+    font-variant-numeric: tabular-nums; margin-left: -6px;
+  }
+  .foot { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: end; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--hair); }
+  .big-no { font-family: var(--display); font-weight: 600; font-size: 54px; line-height: .8; letter-spacing: -.03em; }
+  .foot p { font-size: 12.5px; line-height: 1.6; color: var(--ink-2); max-width: 360px; }
+  .foot p b { color: var(--ink); font-weight: 600; }
+  .go { display: flex; align-items: center; gap: 10px; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid #3a3a3a; }
+  .seg button { border: 0; background: none; color: var(--ink-3); font-family: var(--mono); font-size: 11px; padding: 7px 11px; border-radius: 999px; cursor: pointer; transition: all .25s; }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--ink); color: #000; }
+  .launch {
+    display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 8px 0 22px; border-radius: 999px; text-decoration: none;
+    background: var(--ink); color: #000; font-size: 14px; font-weight: 700; transition: background .25s, transform .2s, box-shadow .3s;
+    box-shadow: 0 0 0 5px rgba(242,242,239,.06), 0 10px 40px -10px var(--accent);
+  }
+  .launch:hover { background: #fff; box-shadow: 0 0 0 7px rgba(242,242,239,.09), 0 14px 50px -8px var(--accent); }
+  .launch:active { transform: scale(.97); }
+  .launch .ic { width: 32px; height: 32px; border-radius: 50%; background: #000; color: var(--ink); display: grid; place-items: center; }
+
+  /* ---------------- missions ---------------- */
+  .missions {
+    grid-column: 2; grid-row: 2; z-index: 3; padding: 28px 30px 22px; display: flex; flex-direction: column;
+    border-top: 1px solid var(--hair); border-left: 1px solid var(--hair);
+    align-self: end; height: 410px; transition: height .5s cubic-bezier(.2,.7,.2,1);
+  }
+  .missions.collapsed { height: 86px; }
+  .missions .tunnel { transition: opacity .4s; }
+  .missions.collapsed .tunnel { opacity: 0; }
+  .head-r { display: flex; align-items: center; gap: 14px; }
+  .fold {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid #333; background: transparent; color: var(--ink-2);
+    display: grid; place-items: center; cursor: pointer; transition: border-color .25s, color .25s;
+  }
+  .fold:hover { border-color: var(--ink); color: var(--ink); }
+  .fold iconify-icon { transition: transform .4s cubic-bezier(.2,.7,.2,1); }
+  .missions.collapsed .fold iconify-icon { transform: rotate(180deg); }
+  .missions .card-head h2 { cursor: pointer; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; position: relative; z-index: 1; }
+  .card-head h2 { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -.02em; line-height: 1.1; }
+  .card-head h2 small { display: block; font-family: var(--mono); font-weight: 400; font-size: 10.5px; letter-spacing: .06em; color: var(--ink-3); margin-top: 6px; }
+  .count { font-family: var(--display); font-size: 40px; font-weight: 300; line-height: .8; letter-spacing: -.04em; }
+  .tunnel { position: absolute; right: -40px; bottom: -40px; width: 250px; height: 250px; opacity: .5; pointer-events: none; }
+  .mlist { list-style: none; position: relative; z-index: 1; overflow-y: auto; min-height: 0; scrollbar-width: none; }
+  .mlist::-webkit-scrollbar { display: none; }
+  .mitem { display: grid; grid-template-columns: 28px 20px 1fr auto; gap: 8px; align-items: center; padding: 11px 0; border-top: 1px solid var(--hair); transition: padding .3s; }
+  .mitem:hover { padding-left: 4px; }
+  .mitem .no { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .mitem .box { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid #4a4a4a; display: grid; place-items: center; cursor: pointer; color: #000; transition: background .2s, border-color .2s; }
+  .mitem .box:hover { border-color: var(--ink); }
+  .mitem.done .box { background: var(--ink-2); border-color: transparent; }
+  .mitem .t { font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mitem.done .t { color: var(--ink-3); text-decoration: line-through; text-decoration-color: #555; }
+  .mitem .tp { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+  .mitem .tp i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .mitem.sel .no { color: var(--accent); }
+  .mitem.sel .t::after { content: "다음 비행"; font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; margin-left: 8px; vertical-align: 1px; }
+  .add-line { margin-top: auto; padding-top: 13px; border-top: 1px dashed #333; display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+  .add-line iconify-icon { color: var(--ink-3); }
+  .add-line input { flex: 1; background: none; border: 0; outline: none; color: var(--ink); font-family: var(--body); font-size: 13px; }
+  .add-line input::placeholder { color: var(--ink-3); }
+  .add-line kbd { font-family: var(--mono); font-size: 10px; color: var(--ink-3); border: 1px solid #333; border-radius: 4px; padding: 1px 6px; }
+
+  /* ---------------- stats bar (A format) ---------------- */
+  .stats { grid-column: 1 / -1; grid-row: 3; display: grid; grid-template-columns: 1fr 1.3fr 1fr 1.5fr 1fr; padding: 0 40px; }
+  .stat { padding: 22px 26px 0; border-left: 1px solid var(--hair); min-width: 0; }
+  .stat:first-child { border-left: 0; padding-left: 0; }
+  .stat .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; color: var(--ink-3); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .stat .v { font-family: var(--data); font-stretch: 118%; font-weight: 700; font-size: 26px; letter-spacing: .01em; white-space: nowrap; line-height: 1.1; }
+  .stat .v small { font-family: var(--body); font-size: 13px; font-weight: 500; color: var(--ink-2); margin: 0 6px 0 2px; }
+  .stat .s { font-size: 12px; color: var(--ink-3); margin-top: 6px; white-space: nowrap; }
+  .stat .s .up { color: #9be3b0; }
+  .spark-row { display: flex; gap: 16px; align-items: flex-end; }
+  .spark { display: flex; align-items: flex-end; gap: 5px; height: 34px; width: 116px; }
+  .spark span { flex: 1; background: #3a3a3a; border-radius: 2px; min-width: 4px; }
+  .spark span.today { background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: background .5s, box-shadow .5s; }
+  .stack { display: flex; height: 6px; border-radius: 4px; overflow: hidden; gap: 2px; margin: 12px 0 10px; }
+  .stack span { display: block; height: 100%; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+  .legend { display: flex; gap: 12px; font-size: 11.5px; color: var(--ink-2); flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .tabs-mini { display: inline-flex; gap: 2px; border: 1px solid #333; border-radius: 999px; padding: 2px; }
+  .tabs-mini button { border: 0; background: none; font-family: var(--body); font-size: 10.5px; padding: 2px 9px; border-radius: 999px; color: var(--ink-3); cursor: pointer; }
+  .tabs-mini button.on { background: rgba(255,255,255,.14); color: var(--ink); }
+
+  @media (max-width: 1200px) {
+    :root { --side-w: 440px; }
+    .stats { grid-template-columns: 1fr 1.3fr 1fr 1.5fr; }
+    .stat:nth-child(5) { display: none; }
+    .foot { grid-template-columns: 1fr; gap: 14px; }
+    .big-no { display: none; }
+  }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .board { height: auto; grid-template-columns: 1fr; grid-template-rows: 94vh auto auto; }
+    .hero { grid-column: 1; grid-row: 1; }
+    .hero-bottom { right: 24px; left: 24px; }
+    .hero-top { left: 24px; gap: 22px; }
+    .hero-top .meta:nth-child(4) { display: none; }
+    .missions { grid-column: 1; grid-row: 2; height: 420px; border: 0; }
+    .missions.collapsed { height: 86px; }
+    .stats { grid-column: 1; grid-row: 3; grid-template-columns: 1fr 1fr; padding: 0 24px 24px; }
+    .stat { border-left: 0; padding-left: 0; border-bottom: 1px solid var(--hair); padding-bottom: 18px; }
+    .stat:nth-child(5) { display: block; }
+  }
+  @media (max-width: 560px) {
+    .stats { grid-template-columns: 1fr; }
+    .hero-top .meta:nth-child(3) { display: none; }
+    .timer { font-size: 92px; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<main class="board">
+  <!-- ======== hero: next destination ======== -->
+  <section class="cell hero" id="hero">
+    <canvas id="heroCanvas"></canvas>
+    <svg id="heroOrbits" aria-hidden="true"></svg>
+    <div class="ship-tag" id="shipTag">COSMO-04 <span>— 발사 대기 · 출발 궤도</span></div>
+
+    <div class="hero-top">
+      <div class="brand"><i></i>Cosmodoro</div>
+      <div class="meta"><b>Interstellar focus</b><div class="rule"></div>우주뽀모도로<br>Space pomodoro series</div>
+      <div class="meta"><b id="metaMission">Mission 04</b><div class="rule"></div><span id="metaRoute">지구 기지 → 화성</span><br><span id="metaTopic">코딩 · 25분 비행</span></div>
+      <div class="meta"><b>2026.10.24</b><div class="rule"></div>Sat · 14:26 KST<br>세션 3 / 4 완료</div>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="topics" id="topics">
+        <button class="topic on" data-topic="code"><span class="no">01</span><i style="background:var(--c-code)"></i>화성 · 코딩</button>
+        <button class="topic" data-topic="design"><span class="no">02</span><i style="background:var(--c-design)"></i>금성 · 디자인</button>
+        <button class="topic" data-topic="read"><span class="no">03</span><i style="background:var(--c-read)"></i>토성 · 독서</button>
+        <button class="topic" data-topic="eng"><span class="no">04</span><i style="background:var(--c-eng)"></i>해왕성 · 영어</button>
+        <button class="topic new"><iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>새 행성</button>
+      </div>
+      <div class="eyebrow"><i></i><span id="eyebrowText">화성까지 — Next destination · Mars</span></div>
+      <div class="timer" id="timer">25:00</div>
+      <div class="foot">
+        <div class="big-no" id="bigNo">04</div>
+        <p id="footText">이번 미션은 <b>로그인 화면 API 연결</b>. 25분 뒤 화성에 도착하면 정거장에 도킹해 5분 쉬어요.</p>
+        <div class="go">
+          <div class="seg" id="durSeg">
+            <button data-min="25" class="on">25</button>
+            <button data-min="50">50</button>
+            <button data-min="90">90</button>
+          </div>
+          <a class="launch" id="launchBtn" href="v4-flight.html">발사하기<span class="ic"><iconify-icon icon="solar:rocket-2-bold" width="16"></iconify-icon></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== mission index (todo) ======== -->
+  <section class="cell missions">
+    <svg class="tunnel" id="tunnel" viewBox="0 0 250 250" aria-hidden="true"></svg>
+    <div class="card-head">
+      <h2>Mission index<small>할 일 — 비행할 미션을 골라요</small></h2>
+      <div class="head-r">
+        <div class="count" id="mCount">04</div>
+        <button class="fold" id="foldBtn" aria-label="미션 목록 접기" aria-expanded="true"><iconify-icon icon="solar:alt-arrow-down-linear" width="16"></iconify-icon></button>
+      </div>
+    </div>
+    <ul class="mlist" id="mlist"></ul>
+    <form class="add-line" id="addForm">
+      <iconify-icon icon="solar:add-circle-linear" width="17"></iconify-icon>
+      <input id="addInput" placeholder="새 미션 기록하기" autocomplete="off">
+      <kbd>Enter</kbd>
+    </form>
+  </section>
+
+  <!-- ======== stats bar ======== -->
+  <section class="cell stats">
+    <div class="stat">
+      <div class="k">오늘 집중</div>
+      <div class="v">3<small>시간</small>20<small>분</small></div>
+      <div class="s">비행 8회 · 정거장 휴식 7회</div>
+    </div>
+    <div class="stat">
+      <div class="k">이번 주</div>
+      <div class="spark-row">
+        <div>
+          <div class="v">14<small>시간</small>05<small>분</small></div>
+          <div class="s"><span class="up">▲ 12%</span> 지난주보다</div>
+        </div>
+        <div class="spark" aria-label="요일별 집중 시간">
+          <span style="height:46%"></span><span style="height:72%"></span><span style="height:58%"></span><span style="height:88%"></span><span style="height:40%"></span><span class="today" style="height:66%"></span><span style="height:8%"></span>
+        </div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="k">이번 달</div>
+      <div class="v">52<small>시간</small>10<small>분</small></div>
+      <div class="s">하루 평균 2.2시간 · 18일 연속</div>
+    </div>
+    <div class="stat">
+      <div class="k">주제별
+        <span class="tabs-mini" id="splitTabs"><button data-k="today">오늘</button><button data-k="week" class="on">주</button><button data-k="month">달</button></span>
+      </div>
+      <div class="stack" id="stack"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="stat">
+      <div class="k">누적 항해</div>
+      <div class="v">1.42<small>AU</small></div>
+      <div class="s">목성 궤도까지 3.78 AU</div>
+    </div>
+  </section>
+</main>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* =========================================================
+   DATA
+   ========================================================= */
+const TOPICS = {
+  code:   { no: '01', ko: '화성', en: 'Mars', topic: '코딩', accent: '#ff5b1f', tint: '#c98466', type: 0, seed: 2.7, crater: 5.0, scale: 1, ring: false },
+  design: { no: '02', ko: '금성', en: 'Venus', topic: '디자인', accent: '#27c2b0', tint: '#d4c597', type: 2, seed: 4.1, crater: 3.0, scale: 1, ring: false },
+  read:   { no: '03', ko: '토성', en: 'Saturn', topic: '독서', accent: '#eadcb4', tint: '#c3a074', type: 1, seed: 5.5, crater: 3.0, scale: 0.6, ring: true },
+  eng:    { no: '04', ko: '해왕성', en: 'Neptune', topic: '영어', accent: '#2f7cff', tint: '#7b95c9', type: 1, seed: 9.2, crater: 3.0, scale: 0.92, ring: false },
+};
+const missions = [
+  { t: '로그인 화면 API 연결', topic: 'code', done: false },
+  { t: '통계 차트 컴포넌트 만들기', topic: 'code', done: false },
+  { t: '온보딩 일러스트 시안 3개', topic: 'design', done: false },
+  { t: '『코스모스』 7장 읽기', topic: 'read', done: false },
+  { t: '아침 단어 30개 외우기', topic: 'eng', done: true },
+];
+const SPLIT = {
+  today: [['code', 52, '1.7h'], ['design', 18, '0.6h'], ['read', 30, '1.0h'], ['eng', 0, '0h']],
+  week:  [['code', 46, '6.5h'], ['design', 22, '3.1h'], ['read', 18, '2.5h'], ['eng', 14, '2.0h']],
+  month: [['code', 35, '18.3h'], ['design', 23, '12.1h'], ['read', 25, '13.2h'], ['eng', 17, '8.6h']],
+};
+const state = { topic: 'code', dur: 25, mission: 0 };
+const root = document.documentElement;
+
+/* =========================================================
+   HERO GEOMETRY + ORBITS (SVG)
+   ========================================================= */
+const heroEl = document.getElementById('hero');
+let geo = { w: 0, h: 0, cx: 0, cy: 0, r: 0 };
+function heroGeometry() {
+  const w = heroEl.clientWidth, h = heroEl.clientHeight;
+  const narrow = w < 900;
+  const r = narrow ? Math.min(w * 0.46, h * 0.3) : Math.min(h * 0.52, w * 0.3);
+  const cx = narrow ? w - r * 0.5 : w - Math.min(w * 0.25, 360);
+  const cy = narrow ? h * 0.3 : h * 0.31;
+  geo = { w, h, r, cx, cy };
+  return geo;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+function arcPath(cx, cy, r, a0, a1) {
+  const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0), x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${Math.abs(a1 - a0) > Math.PI ? 1 : 0} ${a1 > a0 ? 1 : 0} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+function drawOrbits() {
+  const { w, h, cx, cy, r } = geo;
+  const accent = TOPICS[state.topic].accent;
+  const svg = document.getElementById('heroOrbits');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = '';
+  [1.22, 1.55, 1.95, 2.45, 3.05, 3.8, 4.7].forEach((k, i) => el('circle', { cx, cy, r: r * k, fill: 'none', stroke: i === 0 ? '#3d3d3d' : '#222', 'stroke-width': 1 }, svg));
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI * (0.88 + i * 0.035);
+    el('line', { x1: cx + r * 1.02 * Math.cos(a), y1: cy + r * 1.02 * Math.sin(a), x2: cx + r * (2.3 + i * 0.22) * Math.cos(a), y2: cy + r * (2.3 + i * 0.22) * Math.sin(a), stroke: '#f2f2ef', 'stroke-width': .5, opacity: .3 }, svg);
+  }
+  /* planned route: dashed accent arc on the departure orbit, ship parked at its start */
+  const R = r * 1.22;
+  const a0 = Math.PI * 0.74, a1 = Math.PI * 1.16;
+  el('path', { d: arcPath(cx, cy, R, a0, a1), fill: 'none', stroke: accent, 'stroke-width': 1.6, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' }, svg);
+  for (let i = 0; i <= 4; i++) {
+    const a = a0 + (a1 - a0) * i / 4;
+    el('line', { x1: cx + (R - 6) * Math.cos(a), y1: cy + (R - 6) * Math.sin(a), x2: cx + (R + 6) * Math.cos(a), y2: cy + (R + 6) * Math.sin(a), stroke: i === 4 ? accent : '#6a6a6a', 'stroke-width': 1 }, svg);
+  }
+  const sx = cx + R * Math.cos(a0), sy = cy + R * Math.sin(a0);
+  el('circle', { cx: sx, cy: sy, r: 10, fill: 'none', stroke: accent, 'stroke-width': 1, opacity: .5 }, svg);
+  el('circle', { cx: sx, cy: sy, r: 4, fill: '#fff' }, svg);
+  const tag = document.getElementById('shipTag');
+  tag.style.left = sx + 'px'; tag.style.top = sy + 'px';
+}
+function drawTunnel() {
+  const svg = document.getElementById('tunnel');
+  svg.innerHTML = '';
+  for (let i = 0; i < 15; i++) {
+    const s = 220 * Math.pow(0.82, i);
+    el('rect', { x: 240 - s - i * 6, y: 240 - s - i * 9, width: s, height: s, fill: 'none', stroke: i < 2 ? '#d0d0d0' : '#444', 'stroke-width': .8, transform: 'skewY(-12) translate(0 30)' }, svg);
+  }
+}
+
+/* =========================================================
+   HERO PLANET (three.js, orthographic, monochrome grain)
+   ========================================================= */
+const NOISE = `
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0);
+  const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.0-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=0.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.0*x_);
+  vec4 x=x_*ns.x+ns.yyyy;
+  vec4 y=y_*ns.x+ns.yyyy;
+  vec4 h=1.0-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);
+  vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.0+1.0;
+  vec4 s1=floor(b1)*2.0+1.0;
+  vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+  m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+float fbm(vec3 p, int oct){
+  float f=0.0, a=0.5;
+  for(int i=0;i<7;i++){ if(i>=oct) break; f+=a*snoise(p); p*=2.03; a*=0.5; }
+  return f;
+}
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+`;
+
+const canvas = document.getElementById('heroCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 1);
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(0, 1, 0, -1, 1, 8000);
+camera.position.z = 4000;
+const LIGHT = new THREE.Vector3(0.62, 0.5, 0.42).normalize();
+
+const monoMat = (type, seed, crater) => new THREE.ShaderMaterial({
+  uniforms: { uLight: { value: LIGHT }, uTime: { value: 0 }, uSeed: { value: seed }, uCrater: { value: crater }, uType: { value: type }, uTint: { value: new THREE.Color(1, 1, 1) }, uTintAmt: { value: 0 } },
+  vertexShader: `
+    varying vec3 vObj; varying vec3 vN;
+    void main(){ vObj = normalize(position); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform vec3 uLight; uniform float uTime; uniform float uSeed; uniform float uCrater; uniform float uType; uniform vec3 uTint; uniform float uTintAmt;
+    varying vec3 vObj; varying vec3 vN;
+    ${NOISE}
+    void main(){
+      vec3 p = vObj + vec3(uSeed);
+      float alb;
+      if (uType < 0.5) {
+        float n = fbm(p * 1.8, 5);
+        float maria = smoothstep(0.0, 0.35, fbm(p * 0.9 + 4.0, 3));
+        float cr = smoothstep(0.82, 0.97, 1.0 - abs(snoise(p * uCrater)));
+        float cr2 = smoothstep(0.86, 0.98, 1.0 - abs(snoise(p * uCrater * 2.7 + 3.0)));
+        alb = 0.62 + n * 0.32 - maria * 0.2 + cr * 0.12 - cr2 * 0.08;
+      } else if (uType < 1.5) {
+        float turb = fbm(p * vec3(1.6, 5.0, 1.6), 5) * 0.14;
+        float lat = vObj.y + turb;
+        float b = sin(lat * 22.0) * 0.5 + 0.5;
+        float b2 = sin(lat * 7.0 + 1.3) * 0.5 + 0.5;
+        float fine = fbm(p * vec3(3.0, 24.0, 3.0), 3) * 0.5 + 0.5;
+        alb = 0.48 + b * 0.18 + b2 * 0.16 + fine * 0.1;
+      } else {
+        vec3 q = p + fbm(p * 1.4, 4) * 0.6;
+        float sw = fbm(q * vec3(1.5, 3.5, 1.5), 5);
+        alb = 0.66 + sw * 0.22;
+      }
+      vec3 N = normalize(vN);
+      float ndl = dot(N, uLight);
+      float lit = smoothstep(-0.04, 0.35, ndl) * (0.3 + 0.7 * max(ndl, 0.0));
+      float v = alb * lit;
+      v += (1.0 - smoothstep(-0.2, 0.05, ndl)) * 0.035 * (0.6 + alb);
+      float g = hash(gl_FragCoord.xy * 0.73 + floor(uTime * 12.0) * 17.0);
+      v += (g - 0.5) * 0.16 * (0.35 + lit);
+      v = pow(clamp(v, 0.0, 1.0), 1.08);
+      gl_FragColor = vec4(mix(vec3(v), v * uTint * 1.12, uTintAmt), 1.0);
+    }`,
+});
+
+const planetMat = monoMat(0, 2.7, 5.0);
+const planet = new THREE.Mesh(new THREE.SphereGeometry(1, 192, 128), planetMat);
+const tilt = new THREE.Group();
+tilt.add(planet);
+scene.add(tilt);
+
+const ringMat = new THREE.ShaderMaterial({
+  uniforms: { uIn: { value: 1.35 }, uOut: { value: 2.35 }, uTime: { value: 0 }, uTint: { value: new THREE.Color(1, 1, 1) } },
+  vertexShader: `varying vec3 vL; void main(){ vL = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform float uIn; uniform float uOut; uniform float uTime; uniform vec3 uTint; varying vec3 vL;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){
+      float r = (length(vL.xy) - uIn) / (uOut - uIn);
+      float bands = 0.55 + 0.45 * sin(r * 64.0) * sin(r * 21.0 + 1.0);
+      float gap = smoothstep(0.58, 0.6, r) * (1.0 - smoothstep(0.64, 0.66, r));
+      float a = (0.3 + 0.6 * bands) * (1.0 - gap * 0.95) * smoothstep(0.0, 0.05, r) * (1.0 - smoothstep(0.93, 1.0, r));
+      float v = 0.82 * bands + (hash(gl_FragCoord.xy + floor(uTime * 12.0) * 13.0) - 0.5) * 0.18;
+      gl_FragColor = vec4(mix(vec3(v), v * uTint * 1.1, 0.5) * a, a);
+    }`,
+  transparent: true, side: THREE.DoubleSide, depthWrite: false,
+});
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.35, 2.35, 200, 1), ringMat);
+ring.rotation.x = -Math.PI / 2;
+ring.renderOrder = 2;
+tilt.add(ring);
+
+const moonA = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), monoMat(0, 8.1, 3.0));
+const moonB = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), monoMat(0, 5.3, 2.4));
+scene.add(moonA, moonB);
+
+const STAR_N = 1100;
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(STAR_N * 3), starSize = new Float32Array(STAR_N);
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+starGeo.setAttribute('aSize', new THREE.BufferAttribute(starSize, 1));
+scene.add(new THREE.Points(starGeo, new THREE.ShaderMaterial({
+  uniforms: { uPR: { value: renderer.getPixelRatio() } },
+  vertexShader: `attribute float aSize; uniform float uPR; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uPR; }`,
+  fragmentShader: `void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.1, d); gl_FragColor = vec4(vec3(a * 0.85), 1.0); }`,
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+})));
+
+function layoutHero() {
+  const { w, h, cx, cy, r } = geo;
+  renderer.setSize(w, h, false);
+  camera.left = 0; camera.right = w; camera.top = 0; camera.bottom = -h;
+  camera.updateProjectionMatrix();
+  const t = TOPICS[state.topic];
+  const pr = r * t.scale;
+  tilt.position.set(cx, -cy, 0);
+  tilt.scale.setScalar(pr);
+  tilt.rotation.set(t.ring ? 0.42 : 0.35, 0, t.ring ? -0.36 : 0);
+  ring.visible = t.ring;
+  const R1 = r * 1.55, aA = Math.PI * 0.98;
+  moonA.position.set(cx + R1 * Math.cos(aA), -(cy + R1 * Math.sin(aA)), 0);
+  moonA.scale.setScalar(r * 0.07);
+  const R2 = r * 1.95, aB = Math.PI * 0.9;
+  moonB.position.set(cx + R2 * Math.cos(aB), -(cy + R2 * Math.sin(aB)), 0);
+  moonB.scale.setScalar(r * 0.035);
+  for (let i = 0; i < STAR_N; i++) {
+    starPos[i * 3] = Math.random() * w;
+    starPos[i * 3 + 1] = -Math.random() * h;
+    starPos[i * 3 + 2] = -3000;
+    starSize[i] = Math.random() < 0.04 ? 2.4 : 0.6 + Math.random() * 1.1;
+  }
+  starGeo.attributes.position.needsUpdate = true;
+  starGeo.attributes.aSize.needsUpdate = true;
+}
+function applyPlanet() {
+  const t = TOPICS[state.topic];
+  planetMat.uniforms.uType.value = t.type;
+  planetMat.uniforms.uSeed.value = t.seed;
+  planetMat.uniforms.uCrater.value = t.crater;
+  planetMat.uniforms.uTint.value.set(t.tint);
+  planetMat.uniforms.uTintAmt.value = 0.62;
+  ringMat.uniforms.uTint.value.set(t.tint);
+  layoutHero();
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+function launchHref() {
+  const m = missions[state.mission];
+  const q = new URLSearchParams({ topic: state.topic, min: state.dur, mission: m ? m.t : '자유 비행', no: m ? String(state.mission + 1).padStart(2, '0') : '—' });
+  return `v4-flight.html?${q.toString()}`;
+}
+function renderCopy() {
+  const t = TOPICS[state.topic];
+  const m = missions[state.mission];
+  document.getElementById('timer').textContent = `${state.dur}:00`;
+  document.getElementById('eyebrowText').textContent = `${t.ko}까지 — Next destination · ${t.en}`;
+  document.getElementById('metaRoute').textContent = `지구 기지 → ${t.ko}`;
+  document.getElementById('metaTopic').textContent = `${t.topic} · ${state.dur}분 비행`;
+  document.getElementById('bigNo').textContent = m ? String(state.mission + 1).padStart(2, '0') : '—';
+  document.getElementById('metaMission').textContent = m ? `Mission ${String(state.mission + 1).padStart(2, '0')}` : 'Free flight';
+  const foot = document.getElementById('footText');
+  foot.innerHTML = '';
+  foot.append('이번 미션은 ');
+  const b = document.createElement('b'); b.textContent = m ? m.t : '자유 비행'; foot.append(b);
+  foot.append(`. ${state.dur}분 뒤 ${t.ko}에 도착하면 정거장에 도킹해 5분 쉬어요.`);
+  document.getElementById('launchBtn').href = launchHref();
+}
+function setTopic(key, animate = true) {
+  state.topic = key;
+  root.style.setProperty('--accent', TOPICS[key].accent);
+  document.querySelectorAll('.topic[data-topic]').forEach(b => b.classList.toggle('on', b.dataset.topic === key));
+  const swap = () => { applyPlanet(); drawOrbits(); renderCopy(); };
+  if (!animate) { swap(); return; }
+  canvas.classList.add('swap'); document.getElementById('heroOrbits').classList.add('swap');
+  setTimeout(() => { swap(); canvas.classList.remove('swap'); document.getElementById('heroOrbits').classList.remove('swap'); }, 340);
+}
+document.querySelectorAll('.topic[data-topic]').forEach(b => b.addEventListener('click', () => {
+  const key = b.dataset.topic;
+  if (key === state.topic) return;
+  const cur = missions[state.mission];
+  if (!cur || cur.topic !== key) state.mission = missions.findIndex(m => m.topic === key && !m.done);
+  setTopic(key);
+  renderMissions();
+}));
+document.querySelectorAll('#durSeg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#durSeg button').forEach(x => x.classList.toggle('on', x === b));
+  state.dur = +b.dataset.min;
+  renderCopy();
+}));
+
+const TOPIC_COLOR = { code: '#ff5b1f', design: '#27c2b0', read: '#eadcb4', eng: '#2f7cff' };
+const mlist = document.getElementById('mlist');
+function renderMissions() {
+  mlist.innerHTML = '';
+  missions.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.className = 'mitem' + (m.done ? ' done' : '') + (i === state.mission ? ' sel' : '');
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><span class="box">${m.done ? '<iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>' : ''}</span><span class="t"></span><span class="tp"><i style="background:${TOPIC_COLOR[m.topic]}"></i>${TOPICS[m.topic].topic}</span>`;
+    li.querySelector('.t').textContent = m.t;
+    li.querySelector('.box').addEventListener('click', () => { m.done = !m.done; renderMissions(); });
+    li.querySelector('.t').addEventListener('click', () => {
+      state.mission = i;
+      if (m.topic !== state.topic) setTopic(m.topic); else renderCopy();
+      renderMissions();
+    });
+    mlist.appendChild(li);
+  });
+  document.getElementById('mCount').textContent = String(missions.filter(m => !m.done).length).padStart(2, '0');
+  renderCopy();
+}
+document.getElementById('addForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = document.getElementById('addInput');
+  const v = input.value.trim();
+  if (!v) return;
+  missions.push({ t: v, topic: state.topic, done: false });
+  input.value = '';
+  renderMissions();
+  mlist.scrollTop = mlist.scrollHeight;
+});
+
+function renderSplit(k) {
+  document.querySelectorAll('#splitTabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  const d = SPLIT[k];
+  document.getElementById('stack').innerHTML = d.filter(x => x[1]).map(([key, pct]) => `<span style="width:${pct}%;background:${key === 'read' ? '#c9b98a' : TOPIC_COLOR[key]}"></span>`).join('');
+  document.getElementById('legend').innerHTML = d.map(([key, pct, hrs]) => `<span><i style="background:${key === 'read' ? '#c9b98a' : TOPIC_COLOR[key]}"></i>${TOPICS[key].topic} ${hrs}</span>`).join('');
+}
+document.querySelectorAll('#splitTabs button').forEach(b => b.addEventListener('click', () => renderSplit(b.dataset.k)));
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function onResize() { heroGeometry(); layoutHero(); drawOrbits(); }
+addEventListener('resize', onResize);
+heroGeometry();
+setTopic('code', false);
+renderMissions();
+renderSplit('week');
+
+const missionsEl = document.querySelector('.missions');
+const foldBtn = document.getElementById('foldBtn');
+function setFolded(folded) {
+  missionsEl.classList.toggle('collapsed', folded);
+  foldBtn.setAttribute('aria-expanded', String(!folded));
+  foldBtn.setAttribute('aria-label', folded ? '미션 목록 펼치기' : '미션 목록 접기');
+  try { localStorage.setItem('cosmodoro.missionsFolded', folded ? '1' : '0'); } catch (e) {}
+}
+foldBtn.addEventListener('click', () => setFolded(!missionsEl.classList.contains('collapsed')));
+missionsEl.querySelector('.card-head h2').addEventListener('click', () => setFolded(!missionsEl.classList.contains('collapsed')));
+try { if (localStorage.getItem('cosmodoro.missionsFolded') === '1') setFolded(true); } catch (e) {}
+drawTunnel();
+document.fonts.ready.then(onResize);
+
+const clock = new THREE.Clock();
+function frame() {
+  const t = clock.getElapsedTime();
+  planet.rotation.y = t * 0.03;
+  moonA.rotation.y = t * 0.05;
+  [planet, moonA, moonB].forEach(m => { m.material.uniforms.uTime.value = t; });
+  ringMat.uniforms.uTime.value = t;
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
