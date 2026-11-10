@@ -1992,7 +1992,7 @@ if (pipSupported && !ATLAS) {
       return {
         p, free: FREE, orbit: FREE && p >= 1, started: F.started, paused: F.paused, done: F.arrived || (!FREE && p >= 1),
         time: FREE ? fmt(F.study) : fmt(Math.ceil(Math.max(0, F.total - F.elapsed) - 0.001)),
-        ko: T.ko, en: T.en, accent: T.accent, ring: !!CP[T.planet].ring,
+        sec: F.study, planet: T.planet, ko: T.ko, en: T.en, accent: T.accent, ring: !!CP[T.planet].ring,
       };
     },
   }));
