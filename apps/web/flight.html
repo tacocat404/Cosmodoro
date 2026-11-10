@@ -9,7 +9,7 @@
 <link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200..800&family=Archivo:wdth,wght@62..125,300..900&family=Fraunces:opsz,wght@9..144,100..900&family=IBM+Plex+Mono:wght@400;500&family=Big+Shoulders+Display:wght@800&family=Instrument+Serif:ital@1&family=Bodoni+Moda:wght@500&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200..800&family=Archivo:wdth,wght@62..125,300..900&family=Fraunces:opsz,wght@9..144,100..900&family=IBM+Plex+Mono:wght@400;500&family=Big+Shoulders+Display:wght@800;900&family=Instrument+Serif:ital@1&family=Bodoni+Moda:wght@500&family=Unbounded:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
@@ -73,24 +73,50 @@
   body.atlas .plabel.flip { flex-direction: row-reverse; text-align: right; }
   body.atlas .plabel.free small { color: var(--ink-2); }
   body.atlas .plabel.free .pi { opacity: .45; }
-  /* planet detail: the camera flies in so the planet fills the right side; the story sits bottom-left */
-  .atlas-scrim { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; background: linear-gradient(90deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,.45) 34%, transparent 62%), linear-gradient(0deg, rgba(0,0,0,.7), transparent 38%); }
+  /* planet detail: the camera drops to the planet's horizon and the planet fills the lower half; its name stands
+     behind the limb as wide as the screen (clipped to the sky each frame, so it rises from behind the planet).
+     Everything to act on sits in one quiet line at the top, with no boxes: start a flight, rename, detach. */
+  .atlas-scrim { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; background: linear-gradient(180deg, rgba(0,0,0,.6), transparent 22%, transparent 66%, rgba(0,0,0,.85)); }
   body.atlas.focus .atlas-scrim { opacity: 1; }
   body.atlas.focus .atlas-head { opacity: 0 !important; transition-delay: 0s !important; }
-  .pd { --pc: var(--accent); position: absolute; left: 56px; right: 56px; bottom: 44px; pointer-events: none; opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
-  body.atlas.focus .pd { opacity: 1; transform: none; transition-delay: .55s; }
+  .pd { --pc: var(--accent); position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .6s ease; }
+  body.atlas.focus .pd { opacity: 1; transition-delay: .4s; }
   body.atlas.focus .pd .live { pointer-events: auto; }
-  .pd-tabs { display: flex; gap: 22px; flex-wrap: wrap; max-width: 640px; border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 26px; }
-  .pd-tabs button { border: 0; border-bottom: 1px solid transparent; margin-bottom: -1px; background: none; padding: 0 0 10px; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--ink-3); cursor: pointer; transition: color .2s, border-color .2s; }
-  .pd-tabs button:hover { color: var(--ink-2); }
-  .pd-tabs button.on { color: var(--ink); border-color: var(--ink); }
-  .pd-mission { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-2); }
-  .pd-mission b { color: var(--pc); font-weight: 500; }
-  .pd-name { margin: 8px 0 0; font-family: "Big Shoulders Display", var(--display); font-weight: 800; font-size: clamp(84px, 10.5vw, 164px); line-height: .84; letter-spacing: .01em; color: var(--ink); }
-  .pd-desc { max-width: 470px; margin: 18px 0 0; font-size: 14px; line-height: 1.7; color: var(--ink-2); }
-  .pd-cat { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: 640px; }
-  .pd-cat input { height: 42px; width: 250px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.4); backdrop-filter: blur(8px); color: var(--ink); font-family: var(--body); font-size: 14px; outline: none; transition: border-color .2s; }
-  .pd-cat input:focus { border-color: var(--pc); }
+  .pd-sky { position: absolute; inset: 0; }
+  .pd-name { position: absolute; left: 0; right: 0; margin: 0; text-align: center; white-space: nowrap; font-family: "Big Shoulders Display", var(--display); font-weight: 900; line-height: .8; letter-spacing: .005em;
+    color: transparent; background: linear-gradient(180deg, var(--ink) 58%, color-mix(in srgb, var(--pc) 50%, var(--ink))); -webkit-background-clip: text; background-clip: text;
+    transform: translateY(52%); opacity: 0; transition: transform 1.7s cubic-bezier(.16,.84,.24,1), opacity 1s ease; }
+  body.atlas.focus.there .pd-name { transform: none; opacity: 1; transition-delay: .15s; }
+  body.atlas.focus .pd.swap .pd-name { transform: translateY(60%); opacity: 0; transition: transform .5s cubic-bezier(.6,0,.85,.35), opacity .35s ease .12s; }
+  body.atlas.leaving .pd-name { transform: scale(1.08); opacity: 0; transition: transform .7s ease-in, opacity .6s ease; transition-delay: 0s; }
+  .pd-top { opacity: 0; transition: opacity .8s ease; }
+  body.atlas.focus .pd-top { opacity: 1; transition-delay: .9s; }
+  body.atlas.focus .pd.swap .pd-top { opacity: 0; transition: opacity .3s ease; }
+  .pd-bar { position: absolute; left: 50%; top: 42px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 26px; white-space: nowrap; }
+  .pd-go { display: inline-flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid rgba(242,242,239,.5); background: none; padding: 0 2px 8px 0; font-family: var(--body); font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); cursor: pointer; transition: border-color .3s, gap .35s cubic-bezier(.2,.8,.2,1); }
+  .pd-go:hover { border-color: var(--pc); gap: 18px; }
+  .pd-q { border: 0; background: none; padding: 0; font-family: var(--body); font-size: 13px; color: var(--ink-3); cursor: pointer; transition: color .2s; }
+  .pd-q:hover, .pd-q.on { color: var(--ink); }
+  .pd-q.warn { color: #ff8a7a; }
+  .pd-say { font-size: 13px; color: var(--ink-2); }
+  .pd-who { position: absolute; right: 40px; top: 80px; display: flex; align-items: center; gap: 9px; font-size: 13.5px; white-space: nowrap; }
+  .pd-who .pi { width: 18px; height: 18px; flex: none; color: var(--pc); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--pc) 60%, transparent)); }
+  .pd-who b { font-weight: 600; color: var(--ink); }
+  .pd-who .t { font-size: 13px; color: var(--ink-2); }
+  .pd-who .t::before { content: "\00b7"; margin: 0 9px 0 1px; color: var(--ink-3); }
+  .pd-who input { width: 200px; border: 0; border-bottom: 1px solid var(--pc); border-radius: 0; background: transparent; outline: 0; padding: 0 0 5px; font-family: var(--body); font-size: 13.5px; font-weight: 600; color: var(--ink); caret-color: var(--pc); }
+  .pd-who input::placeholder { color: var(--ink-3); font-weight: 400; }
+  .pd-hint { position: absolute; right: 0; top: 30px; font-size: 11.5px; color: var(--ink-3); }
+  .pd-hint.warn { color: #ff8a7a; }
+  .pd-nav { position: absolute; top: 40%; border: 0; background: none; padding: 12px 0; font-family: "Big Shoulders Display", var(--display); font-weight: 800; font-size: 16px; letter-spacing: .22em; color: var(--ink-3); cursor: pointer; transition: color .25s, transform .4s cubic-bezier(.2,.8,.2,1); }
+  .pd-nav.prev { left: 40px; } .pd-nav.next { right: 40px; }
+  .pd-nav:hover { color: var(--ink); }
+  .pd-nav.prev:hover { transform: translateX(-6px); } .pd-nav.next:hover { transform: translateX(6px); }
+  .pd-corner { position: absolute; top: 17%; width: 16px; height: 16px; border: 1px solid rgba(242,242,239,.38); border-bottom: 0; }
+  .pd-corner.l { left: 6.5%; border-right: 0; } .pd-corner.r { right: 6.5%; border-left: 0; }
+  body.atlas .brand .logo { transition: height .9s cubic-bezier(.2,.8,.2,1); }
+  body.atlas.focus .brand .logo { height: 32px; }
+  body.atlas.focus .atlas-back { height: 28px; padding: 0; border-color: transparent; background: none; backdrop-filter: none; font-size: 12px; font-weight: 500; top: 40px; }
   .pd-btn { height: 42px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.4); backdrop-filter: blur(8px); color: var(--ink); font-family: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: border-color .2s, background .2s, color .2s; }
   .pd-btn:hover { border-color: var(--ink-2); }
   .pd-btn.solid { background: var(--ink); border-color: var(--ink); color: #000; }
@@ -98,28 +124,13 @@
   .pd-btn.quiet { background: none; border-color: transparent; color: var(--ink-3); backdrop-filter: none; padding: 0 10px; }
   .pd-btn.quiet:hover { color: var(--ink); }
   .pd-btn.warn { color: #ff8a7a; }
-  .pd-chip { display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 18px 0 14px; border-radius: 999px; border: 1px solid var(--pc); background: color-mix(in srgb, var(--pc) 14%, rgba(0,0,0,.4)); font-size: 14px; font-weight: 600; }
-  .pd-chip .pi { width: 18px; height: 18px; filter: drop-shadow(0 0 5px currentColor); }
-  .pd-note { width: 100%; font-size: 12px; color: var(--ink-3); }
-  .pd-note.ok { color: var(--ink-2); }
   body.free .route { visibility: hidden; }
   body.free #arriveBtn { display: none; }
   .end-ask { display: none; align-items: center; gap: 6px; }
   .end-ask span { margin-right: 8px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
   .ctrls.asking > :not(.end-ask) { display: none; }
   .ctrls.asking .end-ask { display: inline-flex; }
-  .pd-stats { margin-top: 34px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.12); }
-  .pd-stats div { padding: 16px 20px 0; border-left: 1px solid rgba(255,255,255,.12); }
-  .pd-stats div:first-child { border-left: 0; padding-left: 0; }
-  .pd-stats small { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; color: var(--ink-3); }
-  .pd-stats b { display: block; margin-top: 8px; font-family: var(--body); font-size: 17px; font-weight: 600; letter-spacing: .01em; color: var(--ink); white-space: nowrap; }
-  .pd-stats .mine b { color: var(--pc); }
-  .pd-side { position: absolute; right: 0; bottom: 120px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-  .pd-side button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(0,0,0,.3); color: var(--ink); cursor: pointer; display: grid; place-items: center; transition: border-color .2s; }
-  .pd-side button:hover { border-color: var(--ink); }
-  .pd-side span { margin-top: 14px; text-align: right; font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; color: var(--ink-3); }
-  .pd-side span b { display: block; font-family: var(--body); font-size: 22px; font-weight: 500; letter-spacing: 0; color: var(--ink); }
-  @media (max-width: 900px) { .pd { left: 20px; right: 20px; } .pd-stats { grid-template-columns: repeat(2, 1fr); row-gap: 14px; } .pd-side { display: none; } }
+  @media (max-width: 900px) { .pd-bar { top: 104px; gap: 18px; } .pd-go { font-size: 15px; } .pd-who { right: 20px; top: 70px; } .pd-nav { top: auto; bottom: 28px; } .pd-nav.prev { left: 20px; } .pd-nav.next { right: 20px; } .pd-corner { display: none; } }
   body.atlas .atlas-ui { display: block; }
   .atlas-head { position: absolute; left: 50%; top: 30px; transform: translate(-50%, 10px); text-align: center; opacity: 0; transition: opacity 1.4s ease 1.6s, transform 1.4s cubic-bezier(.2,.8,.2,1) 1.6s; pointer-events: none; }
   body.atlas.ready .atlas-head { opacity: 1; transform: translate(-50%, 0); }
@@ -354,13 +365,13 @@
     <div class="atlas-head"><small>SOLAR SYSTEM · 태양계</small><b>어느 행성으로 떠날까요</b><span>행성을 눌러 카테고리를 붙이거나 고칠 수 있어요</span></div>
     <button class="atlas-back" id="atlasBack"><iconify-icon icon="solar:arrow-left-linear" width="15"></iconify-icon><span id="atlasBackText">돌아가기</span></button>
     <section class="pd" id="pd" aria-live="polite">
-      <nav class="pd-tabs live" id="pdTabs" aria-label="행성"></nav>
-      <div class="pd-mission" id="pdMission"></div>
-      <h1 class="pd-name" id="pdName">MARS</h1>
-      <p class="pd-desc" id="pdDesc"></p>
-      <div class="pd-cat live" id="pdCat"></div>
-      <div class="pd-stats" id="pdStats"></div>
-      <div class="pd-side live"><button id="pdUp" aria-label="안쪽 행성"><iconify-icon icon="solar:alt-arrow-up-linear" width="16"></iconify-icon></button><button id="pdDown" aria-label="바깥쪽 행성"><iconify-icon icon="solar:alt-arrow-down-linear" width="16"></iconify-icon></button><span><b id="pdCount">4/8</b>DESTINATIONS</span></div>
+      <div class="pd-sky" id="pdSky"><h1 class="pd-name" id="pdName">MARS</h1></div>
+      <div class="pd-top">
+        <i class="pd-corner l"></i><i class="pd-corner r"></i>
+        <button class="pd-nav prev live" id="pdUp" aria-label="안쪽 행성"></button><button class="pd-nav next live" id="pdDown" aria-label="바깥쪽 행성"></button>
+        <div class="pd-bar live" id="pdBar"></div>
+        <div class="pd-who live" id="pdWho"></div>
+      </div>
     </section>
     <div class="atlas-credit">Planet maps: Solar System Scope (CC BY 4.0) · NASA · Milky Way: Kevinmloch / ESA Gaia (CC BY-SA 4.0) · Stars: d3-celestial</div>
   </div>
@@ -1568,20 +1579,30 @@ const speedAt = p => { const r = 1 + (AU[destKey] - 1) * (1 - Math.cos(Math.PI *
 /* in free flight `total` is only the trip out (3 min, then you stay in orbit); `study` is the time that counts */
 const F = { total: FREE ? 180 : MIN * 60, study: 0, orbit: false, elapsed: 0, paused: false, arrived: false, started: false, speed: 1, burn: 0, view: 'chase', m: 0, clock: 0, arrT: 0, snap: false, ms: 0 };
 const T_HOLD = THREE.MathUtils.clamp(F.total * 0.03, 28, 80), T_SWING = 22, BURN_SECS = 18;
+/* the detail view per planet: where the camera stands (azimuth from the Sun's direction, elevation), how wide the
+   planet is (its radius as a share of the screen width) and where its horizon sits (share of the height) */
+const FOCUS_FOV = 22, VIEWS = { saturn: { az: 2.45, el: 1.0, k: 0.5, hy: 0.6 } }, viewOf = k => VIEWS[k] || { az: 2.3, el: 1.25, k: 0.82, hy: 0.56 };
 const AT = { focus: null, shown: null, f: 0, ef: 0, screen: {}, pos: new THREE.Vector3(), look: new THREE.Vector3(), primed: false, edit: false, armed: false, justMade: false };
 const atA = new THREE.Vector3(), atB = new THREE.Vector3(), atC = new THREE.Vector3(), atP = new THREE.Vector3(), atL = new THREE.Vector3();
 function atlasCamera(dt) {
   AT.f += ((AT.focus ? 1 : 0) - AT.f) * Math.min(1, dt * 1.25);
   AT.ef = AT.f * AT.f * (3 - 2 * AT.f);
+  /* the name waits for the camera: it rises once the planet has filled the screen, however long the flight took */
+  if ((AT.ef > 0.9) !== AT.there) document.body.classList.toggle('there', AT.there = AT.ef > 0.9);
   if (!AT.shown || AT.ef < 0.0005) { AT.primed = false; return; }
-  const b = bodies[AT.shown], P = b.tilt.position, R = b.o.size * b.s * (b.o.ring ? 1.75 : 1);
-  /* sit 60 deg off the sun line so the planet is lit with a clear terminator, a little above it */
+  const b = bodies[AT.shown], P = b.tilt.position, R = b.o.size * b.s, V = viewOf(AT.shown);
+  /* from high over the night side, looking past the sunlit limb: the horizon is the brightest line on screen and the
+     ground falls into shadow toward the bottom. The planet is wider than the screen; only its top arc shows. */
+  const az = V.az + ORB.yaw + Math.sin(performance.now() / 1000 * 0.07) * 0.045, el = THREE.MathUtils.clamp(V.el + ORB.pitch * 0.5, 0.15, 1.45);
   atA.set(-P.x, 0, -P.z).normalize();
   atB.crossVectors(UP, atA).normalize();
-  atA.multiplyScalar(Math.cos(1.05 + ORB.yaw)).addScaledVector(atB, Math.sin(1.05 + ORB.yaw));
-  atP.copy(P).addScaledVector(atA, R * 3.4 * ORB.zoom).addScaledVector(UP, R * (0.45 + ORB.pitch * 2.2) * ORB.zoom);
-  atB.copy(P).sub(atP); atC.crossVectors(atB, UP).normalize();
-  atL.copy(P).addScaledVector(atC, -R * 1.1);
+  atC.copy(atA).multiplyScalar(Math.cos(az) * Math.cos(el)).addScaledVector(atB, Math.sin(az) * Math.cos(el)).addScaledVector(UP, Math.sin(el));
+  const tf = Math.tan(THREE.MathUtils.degToRad(FOCUS_FOV / 2));
+  const half = Math.min(1.05, Math.atan(V.k * 2 * camera.aspect * tf)), dist = R / Math.sin(half) * ORB.zoom;
+  atP.copy(P).addScaledVector(atC, dist);
+  /* aim above the centre so the limb's top sits at the horizon line */
+  atB.copy(UP).addScaledVector(atC, -UP.dot(atC)).normalize();
+  atL.copy(P).addScaledVector(atB, dist * Math.tan(half + Math.atan((V.hy - 0.5) * 2 * tf)));
   if (!AT.primed) { AT.pos.copy(atP); AT.look.copy(atL); AT.primed = true; }
   const k = Math.min(1, dt * 2.2);
   AT.pos.lerp(atP, k); AT.look.lerp(atL, k);
@@ -1589,44 +1610,74 @@ function atlasCamera(dt) {
   lookAt.lerp(AT.look, AT.ef);
 }
 const hhmm = min => (min >= 60 ? `${Math.floor(min / 60)}시간 ${min % 60 ? `${min % 60}분` : ''}`.trim() : `${min}분`);
+/* the name is clipped to the sky: the screen minus the planet's outline (the limb seen in perspective), so the
+   letters stand behind the horizon */
+const scA = new THREE.Vector3(), scB = new THREE.Vector3(), scC = new THREE.Vector3(), scP = new THREE.Vector3();
+function skyClip() {
+  const b = bodies[AT.shown]; if (!b) return;
+  const P = b.tilt.position, R = b.o.size * b.tilt.scale.x, w = innerWidth, h = innerHeight;
+  scA.copy(P).sub(camera.position); const d = scA.length(); scA.divideScalar(d);
+  if (d <= R * 1.001) return;
+  scB.setFromMatrixColumn(camera.matrixWorld, 1).addScaledVector(scA, -scA.dot(scB)).normalize();
+  scC.crossVectors(scA, scB);
+  const rad = R * Math.sqrt(1 - R * R / (d * d)), off = R * R / d;
+  let pts = `0 0,${w}px 0,${w}px ${h}px,0 ${h}px,0 0`, first = '';
+  for (let i = 0; i <= 72; i++) {
+    const t = i / 72 * Math.PI * 2;
+    scP.copy(P).addScaledVector(scA, -off).addScaledVector(scC, rad * Math.sin(t)).addScaledVector(scB, rad * Math.cos(t)).project(camera);
+    const q = `${((scP.x + 1) / 2 * w).toFixed(1)}px ${((1 - scP.y) / 2 * h).toFixed(1)}px`;
+    if (!i) first = q;
+    pts += ',' + q;
+  }
+  $('pdSky').style.clipPath = `polygon(evenodd,${pts},${first},0 0)`;
+}
+const nameCtx = document.createElement('canvas').getContext('2d');
+function fitName() {
+  const el = $('pdName'), w = innerWidth, h = innerHeight;
+  nameCtx.font = '900 100px "Big Shoulders Display"';
+  const wd = nameCtx.measureText(el.textContent).width || 300;
+  el.style.fontSize = Math.min(h * 0.47, 100 * w * 0.74 / wd) + 'px';
+  el.style.bottom = h * (1 - viewOf(AT.shown).hy - 0.06) + 'px';
+}
 function renderDetail() {
   const key = AT.focus || AT.shown;
   if (!key) return;
-  const p = CP[key], cat = CATS.find(c => c.planet === key), idx = COSMO.ORDER.indexOf(key);
+  const p = CP[key], cat = CATS.find(c => c.planet === key), o = COSMO.ORDER, n = o.length, idx = o.indexOf(key);
   const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const arrow = '<iconify-icon icon="solar:arrow-right-linear" width="17"></iconify-icon>', icon = COSMO.icon(key, p.color);
   $('pd').style.setProperty('--pc', p.color);
-  $('pdTabs').innerHTML = COSMO.ORDER.map(k => `<button data-to="${k}" class="${k === key ? 'on' : ''}">${CP[k].EN}</button>`).join('');
-  $('pdMission').innerHTML = p.home ? 'HOME BASE · <b>출발 기지</b>' : cat ? `MISSION · <b>${esc(cat.name)}</b>` : 'MISSION · <b>아직 비어 있는 행성</b>';
-  $('pdName').textContent = p.EN;
-  $('pdDesc').textContent = p.fact;
-  let ui;
-  if (p.home) ui = '<span class="pd-note">지구는 모든 비행이 출발하는 기지라 카테고리를 붙일 수 없어요</span>';
-  else if (!cat || AT.edit) ui = `<input id="pdInput" maxlength="12" placeholder="${cat ? '새 이름' : '카테고리 이름 · 예) 특기병 준비'}" value="${cat ? esc(cat.name) : ''}" autocomplete="off">
-      <button class="pd-btn solid" id="pdSave">${cat ? '이름 바꾸기' : '이 행성에 붙이기'}</button>${cat ? '<button class="pd-btn quiet" id="pdCancel">취소</button>' : ''}
-      <span class="pd-note" id="pdErr">${cat ? '' : '붙이면 메인 화면 행성 목록과 할 일에 바로 나타나요'}</span>`;
-  else ui = `<span class="pd-chip">${COSMO.icon(key, p.color)}${esc(cat.name)}</span>
-      <button class="pd-btn solid" id="pdGo">이 행성으로 집중하기<iconify-icon icon="solar:arrow-right-linear" width="15"></iconify-icon></button>
-      <button class="pd-btn quiet" id="pdRename">이름 바꾸기</button>
-      <button class="pd-btn quiet${AT.armed ? ' warn' : ''}" id="pdDetach">${AT.armed ? '정말 뗄까요?' : '떼기'}</button>
-      ${AT.justMade ? '<span class="pd-note ok">붙였어요 · 이제 메인에서 바로 고를 수 있어요</span>' : AT.armed ? `<span class="pd-note">${CATS.length < 2 ? '카테고리가 하나뿐이라 뗄 수 없어요' : '떼면 이 카테고리의 할 일은 첫 번째 카테고리로 옮겨져요'}</span>` : ''}`;
-  $('pdCat').innerHTML = ui;
-  const mins = cat ? COSMO.minutesFor(cat.key) : 0;
-  $('pdStats').innerHTML = [['태양까지 거리', p.stats.km], ['태양빛이 닿는 시간', p.stats.light], ['1년의 길이', p.stats.year], ['행성 유형', p.stats.type]]
-    .map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join('')
-    + `<div class="mine"><small>${cat ? '집중한 시간' : '카테고리'}</small><b>${cat ? (mins ? hhmm(mins) : '아직 없어요') : p.home ? '—' : '비어 있음'}</b></div>`;
-  $('pdCount').textContent = `${idx + 1}/${COSMO.ORDER.length}`;
+  $('pdName').textContent = p.EN; fitName();
+  $('pdUp').textContent = `\u2039 ${CP[o[(idx - 1 + n) % n]].EN}`; $('pdDown').textContent = `${CP[o[(idx + 1) % n]].EN} \u203a`;
+  let bar, who, hint = '';
+  if (p.home) { bar = '<span class="pd-say">지구는 모든 비행이 출발하는 기지라 카테고리를 붙일 수 없어요</span>'; who = `${icon}<b>출발 기지</b>`; }
+  else if (!cat) {
+    bar = `<button class="pd-go" id="pdAttach">이 행성에 카테고리 붙이기${arrow}</button>`;
+    who = `${icon}<input id="pdInput" maxlength="12" placeholder="카테고리 이름 · 예) 특기병 준비" autocomplete="off">`;
+    hint = 'Enter로 붙여요 · 메인 화면에 바로 나타나요';
+  } else {
+    const mins = COSMO.minutesFor(cat.key);
+    bar = `<button class="pd-go" id="pdGo">이 행성으로 집중하기${arrow}</button><button class="pd-q${AT.edit ? ' on' : ''}" id="pdRename">이름 바꾸기</button><button class="pd-q${AT.armed ? ' warn' : ''}" id="pdDetach">떼기</button>`;
+    who = AT.edit ? `${icon}<input id="pdInput" maxlength="12" value="${esc(cat.name)}" autocomplete="off">` : `${icon}<b>${esc(cat.name)}</b><span class="t">${mins ? `${hhmm(mins)} 집중` : '아직 비행 전'}</span>`;
+    hint = AT.edit ? 'Enter 저장 · Esc 취소' : AT.armed ? (CATS.length < 2 ? '카테고리가 하나뿐이라 뗄 수 없어요' : '한 번 더 누르면 떼요 · 할 일은 첫 카테고리로 옮겨져요') : AT.justMade ? '붙였어요 · 이제 메인에서 바로 고를 수 있어요' : '';
+  }
+  $('pdBar').innerHTML = bar;
+  $('pdWho').innerHTML = `${who}<span class="pd-hint${AT.armed ? ' warn' : ''}" id="pdErr">${hint}</span>`;
   const inp = $('pdInput');
-  if (inp && document.body.classList.contains('focus')) setTimeout(() => inp.focus({ preventScroll: true }), AT.edit ? 0 : 900);
+  if (inp && AT.edit) { inp.focus({ preventScroll: true }); inp.select(); }
 }
 function focusPlanet(key) {
   if (!key || !bodies[key]) return;
+  const swap = AT.focus && AT.focus !== key;
   if (AT.focus !== key) { AT.edit = false; AT.armed = false; AT.justMade = false; }
   AT.focus = AT.shown = key;
   loadPlanet(key, true);
   orbitReset();
   document.body.classList.add('focus');
   $('atlasBackText').textContent = '태양계';
-  renderDetail();
+  clearTimeout(AT.swapT);
+  /* between planets the name sinks behind the horizon, the camera crosses over, and the new name rises */
+  if (swap) { $('pd').classList.add('swap'); AT.swapT = setTimeout(() => { renderDetail(); $('pd').classList.remove('swap'); }, 560); }
+  else { $('pd').classList.remove('swap'); renderDetail(); }
 }
 function unfocus() {
   AT.focus = null;
@@ -1652,27 +1703,39 @@ function commitName() {
   saveCatsNow();
 }
 if (ATLAS) {
-  $('pdTabs').addEventListener('click', e => { const b = e.target.closest('[data-to]'); if (b) focusPlanet(b.dataset.to); });
   const step = d => { const o = COSMO.ORDER, i = o.indexOf(AT.focus); focusPlanet(o[(i + d + o.length) % o.length]); };
+  AT.step = step;
   $('pdUp').addEventListener('click', () => step(-1));
   $('pdDown').addEventListener('click', () => step(1));
-  $('pdCat').addEventListener('click', e => {
+  $('pd').addEventListener('click', e => {
     const id = e.target.closest('button')?.id;
-    if (id === 'pdSave') commitName();
-    if (id === 'pdCancel') { AT.edit = false; renderDetail(); }
-    if (id === 'pdRename') { AT.edit = true; AT.armed = false; AT.justMade = false; renderDetail(); }
+    if (id === 'pdAttach') { const i = $('pdInput'); if (i.value.trim()) commitName(); else i.focus(); }
+    if (id === 'pdRename') { AT.edit = !AT.edit; AT.armed = false; AT.justMade = false; renderDetail(); }
     if (id === 'pdDetach') {
+      AT.edit = false;
       if (CATS.length < 2) { AT.armed = true; renderDetail(); return; }
       if (!AT.armed) { AT.armed = true; AT.justMade = false; renderDetail(); return; }
       CATS = CATS.filter(c => c.planet !== AT.focus); AT.armed = false; saveCatsNow();
     }
     if (id === 'pdGo') {
       const cat = CATS.find(c => c.planet === AT.focus);
+      ORB.tz = 0.62;   /* dive toward the planet as the screen goes dark */
       document.body.classList.add('leaving');
-      setTimeout(() => { location.href = `./?topic=${encodeURIComponent(cat.key)}`; }, 650);
+      setTimeout(() => { location.href = `./?topic=${encodeURIComponent(cat.key)}`; }, 750);
     }
   });
-  $('pdCat').addEventListener('keydown', e => { if (e.target.id === 'pdInput' && e.key === 'Enter') { e.preventDefault(); commitName(); } });
+  $('pd').addEventListener('keydown', e => {
+    if (e.target.id !== 'pdInput') return;
+    if (e.key === 'Enter') { e.preventDefault(); commitName(); }
+    if (e.key === 'Escape' && AT.edit) { e.stopPropagation(); AT.edit = false; renderDetail(); }
+  });
+  /* leaving the field while renaming keeps what was typed; an empty field just cancels */
+  $('pd').addEventListener('focusout', e => {
+    if (e.target.id !== 'pdInput' || !AT.edit) return;
+    if (e.target.value.trim()) commitName(); else { AT.edit = false; renderDetail(); }
+  });
+  addEventListener('resize', () => { if (AT.shown) fitName(); });
+  document.fonts?.ready.then(() => { if (AT.shown) fitName(); });
   addEventListener('click', e => {
     if (ORB.moved) { ORB.moved = false; return; }
     if (e.target.closest('button, input, .pd, .atlas-back, .top')) return;
@@ -1694,7 +1757,7 @@ if (ATLAS) {
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
     if (e.key === 'Escape') back();
-    if (AT.focus && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); const o = COSMO.ORDER, i = o.indexOf(AT.focus); focusPlanet(o[(i + (e.key === 'ArrowUp' ? -1 : 1) + o.length) % o.length]); }
+    if (AT.focus && /^Arrow/.test(e.key)) { e.preventDefault(); AT.step(e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1); }
   });
 }
 const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -2336,9 +2399,10 @@ function frame(now) {
   }
   if (ATLAS) atlasCamera(dt);
   camera.lookAt(lookAt);
-  const fovT = THREE.MathUtils.lerp(35, 52, ATLAS ? 1 : e);
+  const fovT = ATLAS ? THREE.MathUtils.lerp(52, FOCUS_FOV, AT.ef) : THREE.MathUtils.lerp(35, 52, e);
   if (Math.abs(camera.fov - fovT) > 0.01) { camera.fov = fovT; camera.updateProjectionMatrix(); }
   camera.updateMatrixWorld();
+  if (ATLAS && AT.ef > 0.02) skyClip();
 
   /* --- staging: far bodies keep their map directions but take true angular sizes, placed around the camera
      (so moving the camera never parallaxes something a million km away) --- */
