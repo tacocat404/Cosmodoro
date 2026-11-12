@@ -927,7 +927,7 @@ if (!Array.isArray(missions)) missions = [];
 missions.forEach(m => { if (!TOPICS[m.topic] && m.topic !== ETC) m.topic = FIRST_TOPIC; });
 /* finished items remember when they were finished; older ones than this week stop showing under 완료 */
 missions.forEach(m => { if (m.done && !m.doneAt) m.doneAt = Date.now(); });
-const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); })();
+const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); return d.getTime(); })();   /* weeks run Sunday to Saturday, like the calendar */
 const shownDone = m => !m.done || m.doneAt >= weekStart;
 const saveMissions = () => { try { localStorage.setItem('cosmodoro.missions', JSON.stringify(missions)); } catch {} };
 /* focus time from the flights you finished (cosmodoro.flights): minutes per day, in total and per topic */
@@ -941,8 +941,8 @@ const sumDays = (from, to) => {
   return s;
 };
 const split = s => Object.keys(TOPICS).map(k => [k, s.total ? Math.round((s[k] || 0) / s.total * 100) : 0, s[k] ? `${(s[k] / 60).toFixed(1)}h` : '0h']);
-const MONDAY = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return ymd(d); })();
-const SPLIT = { today: split(sumDays(TODAY, TODAY)), week: split(sumDays(MONDAY, TODAY)), month: split(sumDays(TODAY.slice(0, 8) + '01', TODAY)) };
+const SUNDAY = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return ymd(d); })();
+const SPLIT = { today: split(sumDays(TODAY, TODAY)), week: split(sumDays(SUNDAY, TODAY)), month: split(sumDays(TODAY.slice(0, 8) + '01', TODAY)) };
 const START_TOPIC = (k => (TOPICS[k] ? k : FIRST_TOPIC))(new URLSearchParams(location.search).get('topic'));
 const state = { topic: START_TOPIC, dur: 25, mission: 0 };
 const root = document.documentElement;
@@ -1777,7 +1777,7 @@ const GROUPS = { late: '지남', today: '오늘', week: '이번 주', later: '�
 function renderMissions() {
   pickMission();
   mlist.innerHTML = '';
-  /* 완료 keeps only what was finished this week (since Monday); earlier ones are still kept for the records */
+  /* 완료 keeps only what was finished this week (since Sunday); earlier ones are still kept for the records */
   const items = missions.filter(m => inTab(m) && shownDone(m));
   if (!items.length) {
     mlist.innerHTML = `<li class="ev-empty">${todoTab === 'goal' ? '마감일 없이 오래 가져갈 목표를 적어 두세요' : '할 일이 없어요'}</li>`;
@@ -2141,16 +2141,16 @@ const goalH = () => +store.get('cosmodoro.goal', '4');
 
 /* periods: this week by weekday, the last 8 weeks, the last 6 months */
 const PERIOD = (() => {
-  const wd = (NOW.getDay() + 6) % 7;
-  const week = ['월', '화', '수', '목', '금', '토', '일'].map((d, k) => [d, k <= wd ? hours[TODAY_I - wd + k] : 0]);
+  const wd = NOW.getDay();
+  const week = ['일', '월', '화', '수', '목', '금', '토'].map((d, k) => [d, k <= wd ? hours[TODAY_I - wd + k] : 0]);
   const thisWeek = week.reduce((a, [, v]) => a + v, 0);
   $('weekH').firstChild.textContent = Math.round(thisWeek);
   { const m = BY_DAY[TODAY]?.total || 0, h = Math.floor(m / 60);
     $('todayV').innerHTML = `<span data-count="${h}">${h}</span><small>시간</small><span data-count="${m % 60}" data-pad="2">${pad2(m % 60)}</span><small>분</small>`;
     $('todayN').textContent = `비행 ${FLIGHTS.filter(f => ymd(new Date(f.at)) === TODAY).length}회`; }
   const weeksH = Array.from({ length: 8 }, (_, k) => { const s = TODAY_I - wd - (7 - k) * 7; return hours.slice(s, s + 7).reduce((a, b) => a + b, 0); });
-  const monday = dayOf(TODAY_I - wd);
-  const weeks = weeksH.map((v, k) => { const d = new Date(monday); d.setDate(d.getDate() - (7 - k) * 7); return [k === 7 ? '이번 주' : `${d.getMonth() + 1}.${d.getDate()}`, v]; });
+  const sunday = dayOf(TODAY_I - wd);
+  const weeks = weeksH.map((v, k) => { const d = new Date(sunday); d.setDate(d.getDate() - (7 - k) * 7); return [k === 7 ? '이번 주' : `${d.getMonth() + 1}.${d.getDate()}`, v]; });
   const months = Array.from({ length: 6 }, (_, k) => {
     const d = new Date(NOW.getFullYear(), NOW.getMonth() - 5 + k, 1), key = ymd(d).slice(0, 8);
     return [`${d.getMonth() + 1}월`, FLIGHTS.filter(f => ymd(new Date(f.at)).startsWith(key)).reduce((a, f) => a + (+f.min || 0), 0) / 60];
@@ -2214,7 +2214,7 @@ const jit = i => { const v = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return (v
 {
   /* the panel: twelve weeks, a column per week that runs down then back up (so consecutive days always sit side by
      side and the run reads as one winding constellation), nudged off the grid like a real sky */
-  const off = (dayOf(0).getDay() + 6) % 7, pts = [];
+  const off = dayOf(0).getDay(), pts = [];
   for (let i = 0; i < DAYS; i++) { const c = Math.floor((i + off) / 7), k = (i + off) % 7, r = c % 2 ? 6 - k : k; pts.push([i, 14 + c * 22.4 + jit(i) * 4, 10 + r * 17 + jit(i + 99) * 3.5]); }
   const link = pts.filter(([i]) => i > TODAY_I - streak).map(([, x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   $('constelBig').innerHTML = glowDef('cb') + `<polyline class="link" points="${link}"/>` + pts.map(([i, x, y]) => starMark(x, y, i, 'cb')).join('');

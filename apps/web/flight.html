@@ -1922,7 +1922,7 @@ const ML = (() => {
   try { list = JSON.parse(store.get('cosmodoro.missions', 'null')); } catch {}
   if (!Array.isArray(list)) list = [];
   const save = () => store.set('cosmodoro.missions', JSON.stringify(list));
-  const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); })();
+  const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); return d.getTime(); })();
   const mine = () => list.filter(m => m.kind !== 'goal' && m.topic === topicKey && (!m.done || (m.doneAt || 0) >= weekStart));
   let cur = list.find(m => String(m.id) === MID) || list.find(m => m.kind !== 'goal' && m.topic === topicKey && m.t === MISSION) || null;
   return { list, save, mine, day, get cur() { return cur; }, set cur(m) { cur = m; } };
