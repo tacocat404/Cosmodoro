@@ -1827,8 +1827,8 @@ function quickDays() {
 function renderDuePop() {
   $('dueQuick').innerHTML = quickDays().map(([l, v]) => `<button type="button" data-v="${v}" class="${v === due.value ? 'on' : ''}">${l}</button>`).join('');
   $('dpMonth').textContent = `${due.y}. ${pad2(due.m + 1)}`;
-  const lead = (new Date(due.y, due.m, 1).getDay() + 6) % 7, days = new Date(due.y, due.m + 1, 0).getDate();
-  let h = ['월', '화', '수', '목', '금', '토', '일'].map(w => `<span class="wd">${w}</span>`).join('');
+  const lead = new Date(due.y, due.m, 1).getDay(), days = new Date(due.y, due.m + 1, 0).getDate();
+  let h = ['일', '월', '화', '수', '목', '금', '토'].map(w => `<span class="wd">${w}</span>`).join('');
   for (let c = 0; c < Math.ceil((lead + days) / 7) * 7; c++) {
     const d = new Date(due.y, due.m, c - lead + 1), k = ymd(d);
     h += `<button type="button" class="d${d.getMonth() !== due.m ? ' out' : ''}${k < TODAY ? ' past' : ''}${k === TODAY ? ' today' : ''}${k === due.value ? ' pick' : ''}" data-v="${k}">${d.getDate()}</button>`;
@@ -2066,9 +2066,9 @@ const cal = { y: NOW.getFullYear(), m: NOW.getMonth(), sel: TODAY };
 function planetIcon(t) { return `<svg class="pi" style="color:var(--c-${t})" aria-hidden="true"><use href="#pl-${tagOf(t).planet}"/></svg>`; }
 function renderCal() {
   $('calMonth').textContent = `${cal.y}. ${pad2(cal.m + 1)}`;
-  const first = new Date(cal.y, cal.m, 1), lead = (first.getDay() + 6) % 7;
+  const first = new Date(cal.y, cal.m, 1), lead = first.getDay();
   const days = new Date(cal.y, cal.m + 1, 0).getDate(), cells = Math.ceil((lead + days) / 7) * 7;
-  let html = ['월', '화', '수', '목', '금', '토', '일'].map(w => `<span class="wd">${w}</span>`).join('');
+  let html = ['일', '월', '화', '수', '목', '금', '토'].map(w => `<span class="wd">${w}</span>`).join('');
   for (let c = 0; c < cells; c++) {
     const d = new Date(cal.y, cal.m, c - lead + 1), key = ymd(d);
     const day = missions.filter(m => m.date === key);
